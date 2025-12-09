@@ -1,0 +1,17 @@
+{
+  "name": "glass-dynamics",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+  "server": "cd server && npm run start",
+  "client": "cd client && npm run dev",
+  "dev": "concurrently \"cd server && npx nodemon index.js\" \"cd client && npm run dev\""
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

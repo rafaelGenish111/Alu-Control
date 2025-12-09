@@ -1,0 +1,100 @@
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Calendar Dark Mode Overrides (Tailwind Style) --- */
+
+@layer components {
+
+    /* צבע טקסט כללי */
+    .rbc-calendar {
+        @apply text-slate-300 font-sans;
+    }
+
+    /* רקע של ימים מחוץ לטווח */
+    .rbc-off-range-bg {
+        @apply bg-slate-900;
+    }
+
+    /* כותרת (ימים/שעות) */
+    .rbc-header {
+        @apply border-b border-slate-700 p-3 font-bold text-slate-200;
+    }
+
+    /* רקע כללי של התצוגות */
+    .rbc-month-view,
+    .rbc-time-view,
+    .rbc-agenda-view {
+        @apply border border-slate-700 bg-slate-900;
+    }
+
+    /* קווים מפרידים בין ימים */
+    .rbc-day-bg+.rbc-day-bg {
+        @apply border-l border-slate-700;
+    }
+
+    /* קווים מפרידים בין שורות */
+    .rbc-month-row+.rbc-month-row {
+        @apply border-t border-slate-700;
+    }
+
+    .rbc-day-bg {
+        @apply border-l border-slate-700;
+    }
+
+    /* היום הנוכחי - הדגשה עדינה */
+    .rbc-today {
+        @apply bg-blue-500/10;
+    }
+
+    /* האירוע עצמו (הפס הכחול) */
+    .rbc-event {
+        @apply bg-blue-600 rounded-md border-none shadow-sm;
+    }
+
+    /* טקסט בתוך האירוע */
+    .rbc-event-content {
+        @apply text-xs font-bold;
+    }
+
+    /* כפתורים למעלה (Today, Back, Next) */
+    .rbc-toolbar button {
+        @apply text-white border border-slate-700 rounded-lg mx-1 transition-colors;
+    }
+
+    .rbc-toolbar button:hover {
+        @apply bg-slate-800;
+    }
+
+    .rbc-toolbar button.rbc-active {
+        @apply bg-blue-600 border-blue-600 shadow-lg;
+    }
+
+    /* כותרות בתצוגת שבוע/יום */
+    .rbc-time-header-content {
+        @apply border-l border-slate-700;
+    }
+
+    .rbc-time-content {
+        @apply border-t border-slate-700;
+    }
+
+    .rbc-timeslot-group {
+        @apply border-b border-slate-700;
+    }
+
+    .rbc-time-view .rbc-row {
+        @apply border-b border-slate-700;
+    }
+
+    /* טקסט של השעות בצד */
+    .rbc-time-gutter .rbc-timeslot-group {
+        @apply border-slate-700 text-slate-500 text-xs;
+    }
+
+    /* כותרת החודש/שבוע למעלה */
+    .rbc-toolbar-label {
+        @apply text-xl font-bold text-white mb-2;
+    }
+}
