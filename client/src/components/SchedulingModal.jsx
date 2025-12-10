@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { X, Calendar, User, Save } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const SchedulingModal = ({ order, onClose, onSuccess }) => {
   const { t } = useTranslation();
@@ -12,8 +13,6 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
     selectedInstallers: [],
     notes: ''
   });
-
-  const API_URL = 'http://localhost:5000/api';
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${user.token}` } };
 

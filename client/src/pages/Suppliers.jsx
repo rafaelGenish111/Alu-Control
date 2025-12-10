@@ -14,11 +14,12 @@ const Suppliers = () => {
 
     const fetchBatching = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/orders/batching`, config);
+            // API_URL already includes '/api', so we only append '/orders/...'
+            const res = await axios.get(`${API_URL}/orders/batching`, config);
             setSuppliers(res.data); // data is grouped by supplier on the server
             setLoading(false);
         } catch (error) {
-            console.error(error);
+            console.error('Error fetching batching list:', error);
             setLoading(false);
         }
     };
@@ -31,10 +32,12 @@ const Suppliers = () => {
         if (!window.confirm(`Generate Purchase Order for ${supplierName}?`)) return;
 
         try {
-            await axios.post(`${API_URL}/api/orders/batch-order`, { supplier: supplierName }, config);
+            // API_URL already includes '/api'
+            await axios.post(`${API_URL}/orders/batch-order`, { supplier: supplierName }, config);
             alert('Success! Items marked as ordered.');
             fetchBatching(); // refresh view
         } catch (error) {
+            console.error('Error processing batch order:', error);
             alert('Error processing order');
         }
     };

@@ -102,3 +102,39 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// הוסף בסוף הקובץ
+exports.updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { name, email, phone, role, language, password } = req.body;
+
+  try {
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // עדכון שדות רגילים
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phone = phone || user.phone;
+    user.role = role || user.role;
+    user.language = language || user.language;
+
+    // עדכון סיסמה (רק אם הוזנה חדשה)
+    if (password && password.trim() !== '') {
+      user.password = password; // המודל יצפין את זה לבד לפני השמירה
+    }
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      message: 'User updated successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const Login = () => {
   const { t, i18n } = useTranslation();
@@ -9,26 +11,23 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
-  // Backend server address (computer IP) - updated according to Vite log: 192.168.150.119
-  // If the IP changes in the future, update it here
-  const API_URL = 'http://192.168.150.119:5000/api'; 
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(''); // reset previous errors
-    
+
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
-      
+
       // store token
       localStorage.setItem('userInfo', JSON.stringify(res.data));
-      
+
       // set preferred language
-      if(res.data.language) {
+      if (res.data.language) {
         i18n.changeLanguage(res.data.language);
       }
-      
+
       // smart routing: installer goes to installer app, others to dashboard
       if (res.data.role === 'installer') {
         navigate('/installer');
@@ -55,7 +54,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="bg-slate-900 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-800">
-        
+
         {/* Language Toggle */}
         <div className="flex justify-end mb-4">
           <button onClick={toggleLang} className="text-slate-400 hover:text-white text-sm font-bold">
@@ -71,25 +70,32 @@ const Login = () => {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-slate-400 text-sm mb-1">{t('email')}</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition"
               placeholder="user@glass.com"
             />
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-slate-400 text-sm mb-1">{t('password')}</label>
-            <input 
-              type="password" 
+            <input
+              type={showPassword ? "text" : "password"} // שינוי דינמי של הסוג
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition"
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition pr-10" // pr-10 כדי לפנות מקום לאייקון
               placeholder="••••••••"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[32px] text-slate-500 hover:text-white transition"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
-          
+
           <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-blue-900/20 mt-2">
             {t('login')}
           </button>

@@ -16,7 +16,7 @@ const InstallerApp = () => {
     const fetchJobs = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`${API_URL}/api/orders`, config);
+            const res = await axios.get(`${API_URL}/orders`, config);
             const myJobs = res.data.filter(o => o.status === 'install'); // Or check assigned installers logic
             setJobs(myJobs);
             setLoading(false);
@@ -35,8 +35,8 @@ const InstallerApp = () => {
         const formData = new FormData();
         formData.append('image', file);
         try {
-            const uploadRes = await axios.post(`${API_URL}/api/upload`, formData);
-            await axios.put(`${API_URL}/api/orders/${orderId}/files`, {
+            const uploadRes = await axios.post(`${API_URL}/upload`, formData);
+            await axios.put(`${API_URL}/orders/${orderId}/files`, {
                 url: uploadRes.data.url,
                 type: 'site_photo',
                 name: 'Installation Proof'
@@ -53,7 +53,7 @@ const InstallerApp = () => {
     const finishJob = async (orderId) => {
         if (!window.confirm(t('finish_job') + '?')) return;
         try {
-            await axios.put(`${API_URL}/api/orders/${orderId}/status`, { status: 'pending_approval' }, config); // Move to pending approval
+            await axios.put(`${API_URL}/orders/${orderId}/status`, { status: 'pending_approval' }, config); // Move to pending approval
             fetchJobs();
         } catch (error) { alert('Error'); }
     };

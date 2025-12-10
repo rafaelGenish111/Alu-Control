@@ -18,7 +18,7 @@ const CalendarView = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const res = await axios.get(`${API_URL}/api/orders`, config);
+                const res = await axios.get(`${API_URL}/orders`, config);
 
                 // --- לוגיקת סינון חכמה ---
                 let relevantOrders = res.data;

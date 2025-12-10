@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Truck, Plus, Trash2, User, Phone, Clock } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const SupplierManagement = () => {
   const { t } = useTranslation();
   const [suppliers, setSuppliers] = useState([]);
   const [formData, setFormData] = useState({ name: '', contactPerson: '', phone: '', leadTime: 7, category: 'Aluminum' });
-  
-  const API_URL = 'http://localhost:5000/api';
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${user.token}` } };
 

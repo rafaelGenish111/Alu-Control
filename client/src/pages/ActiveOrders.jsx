@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Package, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NewOrderModal from '../components/NewOrderModal';
+import { API_URL } from '../config/api';
 
 const ActiveOrders = () => {
     const { t } = useTranslation();
@@ -11,8 +12,6 @@ const ActiveOrders = () => {
     const [orders, setOrders] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
-
-    const API_URL = 'http://192.168.150.119:5000/api';
     const userInfo = localStorage.getItem('userInfo');
     const user = userInfo ? JSON.parse(userInfo) : null;
 

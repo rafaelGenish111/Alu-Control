@@ -18,8 +18,8 @@ const seedSuperAdmin = async () => {
     // 3. Create the initial Super Admin user
     const superAdmin = await User.create({
       name: 'Super Admin',
-      email: 'super@glass.com', // initial login email
-      password: 'admin_password_123', // initial password (change it later)
+      email: 'orr@glass.com', // initial login email
+      password: 'orra_1234', // initial password (change it later)
       role: 'super_admin',
       language: 'es' // default language, useful to verify Spanish translations
     });

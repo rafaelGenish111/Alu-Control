@@ -18,7 +18,7 @@ const CRM = () => {
   const fetchOrders = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const res = await axios.get(`${API_URL}/api/orders`, config);
+      const res = await axios.get(`${API_URL}/orders`, config);
       setOrders(res.data);
       setLoading(false);
     } catch (error) {
@@ -99,7 +99,7 @@ const CRM = () => {
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
-                        await axios.put(`${API_URL}/api/orders/${order._id}/status`, { status: 'production' }, { headers: { Authorization: `Bearer ${user.token}` } });
+                        await axios.put(`${API_URL}/orders/${order._id}/status`, { status: 'production' }, { headers: { Authorization: `Bearer ${user.token}` } });
                         fetchOrders();
                       }}
                       className="ml-2 text-[10px] text-blue-400 hover:underline"

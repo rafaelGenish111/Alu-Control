@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { loginUser, createUser, getAllUsers } = require('../controllers/authController');
+const { loginUser, createUser, getAllUsers, updateUser } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Login – publicly accessible
@@ -14,4 +14,6 @@ router.post('/create-user', protect, authorize('super_admin', 'admin'), createUs
 // Admin-only endpoint to get all users (wired in router)
 router.get('/users', protect, authorize('super_admin', 'admin'), getAllUsers);
 
+// Admin-only endpoint to update a user (wired in router)   
+router.put('/users/:id', protect, authorize('super_admin', 'admin'), updateUser);
 module.exports = router;

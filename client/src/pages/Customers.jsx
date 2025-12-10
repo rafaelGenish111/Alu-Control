@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Users, Search, Phone, MapPin, Calendar, Package } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const Customers = () => {
     const { t } = useTranslation();
@@ -10,9 +11,6 @@ const Customers = () => {
     const [customers, setCustomers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
-
-    // Backend server address (same IP as in Login.jsx and InstallerApp.jsx)
-    const API_URL = 'http://192.168.150.119:5000/api';
     const userInfo = localStorage.getItem('userInfo');
     const user = userInfo ? JSON.parse(userInfo) : null;
 

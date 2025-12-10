@@ -7,6 +7,7 @@ import {
   Loader, Image as ImageIcon, ArrowRight, RotateCcw,
   FileCheck, UploadCloud, ExternalLink, Lock
 } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const ClientCard = () => {
   const { id } = useParams();
@@ -17,8 +18,6 @@ const ClientCard = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingType, setUploadingType] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-
-  const API_URL = 'http://localhost:5000/api';
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${user.token}` } };
 

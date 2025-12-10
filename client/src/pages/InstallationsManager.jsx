@@ -3,14 +3,13 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Truck, Calendar, MapPin, Users, CheckCircle, Clock } from 'lucide-react';
 import SchedulingModal from '../components/SchedulingModal';
+import { API_URL } from '../config/api';
 
 const InstallationsManager = () => {
   const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null); // למודל השיבוץ
-
-  const API_URL = 'http://localhost:5000/api';
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${user.token}` } };
 

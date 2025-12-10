@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.13.2",
     "i18next": "^23.15.1",
     "lucide-react": "^0.555.0",
     "moment": "^2.30.1",

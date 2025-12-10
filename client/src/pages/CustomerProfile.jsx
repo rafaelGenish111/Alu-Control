@@ -6,6 +6,7 @@ import {
   ArrowLeft, CheckCircle, Clock, Phone, MapPin, 
   Mail, User, Package, Calendar 
 } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const CustomerProfile = () => {
   const { name } = useParams(); // Client name from URL
@@ -13,8 +14,6 @@ const CustomerProfile = () => {
   const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const API_URL = 'http://localhost:5000/api'; 
   const user = JSON.parse(localStorage.getItem('userInfo'));
 
   useEffect(() => {

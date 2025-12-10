@@ -14,7 +14,8 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json()); // Parsing JSON
-app.use(cors()); // Allow Client to talk to Server
+// CORS – in staging allow all origins. In production, prefer setting a specific origin via env.
+app.use(cors({ origin: '*' }));
 app.use(helmet()); // Security Headers
 
 // Routes
