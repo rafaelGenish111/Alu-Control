@@ -1,84 +1,201 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
-import { useTranslation } from 'react-i18next';
-import { ShoppingCart, Check, Clock, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Check, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const PendingMaterials = () => {
-  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedSupplier, setExpandedSupplier] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [orderMeta, setOrderMeta] = useState({ orderedBy: '', orderedAt: '' });
 
   const user = JSON.parse(localStorage.getItem('userInfo'));
-  const config = { headers: { Authorization: `Bearer ${user.token}` } };
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/orders/procurement/pending`, config);
       setItems(res.data);
       setLoading(false);
     } catch (error) { console.error(error); setLoading(false); }
+  }, [config]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchItems(); }, [fetchItems]);
+
+  const grouped = useMemo(() => {
+    const map = new Map();
+    for (const item of items) {
+      const key = item.supplier || 'General';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [items]);
+
+  const openOrderModal = (item) => {
+    const today = new Date().toISOString().slice(0, 10); // yyyy-mm-dd
+    setSelectedItem(item);
+    setOrderMeta({
+      orderedBy: user?.name || '',
+      orderedAt: today
+    });
   };
 
-  useEffect(() => { fetchItems(); }, []);
+  const closeOrderModal = () => {
+    setSelectedItem(null);
+    setOrderMeta({ orderedBy: '', orderedAt: '' });
+  };
 
-  const handleOrder = async (orderId, materialId) => {
-    if(!window.confirm("Mark this item as ORDERED?")) return;
+  const submitOrder = async () => {
+    if (!selectedItem) return;
     try {
-      await axios.post(`${API_URL}/orders/procurement/order-item`, { orderId, materialId }, config);
+      await axios.post(`${API_URL}/orders/procurement/order-item`, {
+        orderId: selectedItem.orderId,
+        materialId: selectedItem.materialId,
+        orderedBy: orderMeta.orderedBy,
+        orderedAt: orderMeta.orderedAt
+      }, config);
+      closeOrderModal();
       fetchItems(); // רענון - השורה תיעלם כי היא עברה ל-Purchasing
-    } catch (error) { alert('Error'); }
+    } catch (e) {
+      console.error(e);
+      alert('Error');
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto">
       <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-        <ShoppingCart className="text-orange-500" /> פריטים להזמנה (Pending)
+        <ShoppingCart className="text-orange-500" /> Pending items to order
       </h2>
 
-      <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
-        <table className="w-full text-left text-sm text-slate-300">
-          <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
-            <tr>
-              <th className="p-4">תאריך הזמנה</th>
-              <th className="p-4">מס' הזמנה</th>
-              <th className="p-4">לקוח</th>
-              <th className="p-4">ספק</th>
-              <th className="p-4">פריט / תיאור</th>
-              <th className="p-4">כמות</th>
-              <th className="p-4">פעולה</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {items.map((item, idx) => (
-              <tr key={idx} className="hover:bg-slate-800/30 transition">
-                <td className="p-4 whitespace-nowrap text-slate-500">
-                   {new Date(item.orderDate).toLocaleDateString()}
-                </td>
-                <td className="p-4 font-mono text-blue-400">#{item.orderNumber}</td>
-                <td className="p-4 font-bold text-white">{item.clientName}</td>
-                <td className="p-4 text-orange-300">{item.supplier}</td>
-                <td className="p-4">
-                    <span className="text-xs uppercase bg-slate-800 px-1 rounded border border-slate-700 mr-2">{item.materialType}</span>
-                    {item.description}
-                </td>
-                <td className="p-4">{item.quantity}</td>
-                <td className="p-4">
-                    <button 
-                        onClick={() => handleOrder(item.orderId, item.materialId)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition shadow-lg"
-                    >
-                        <Check size={14}/> הוזמן
-                    </button>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && !loading && (
-                <tr><td colSpan="7" className="p-10 text-center text-slate-500">אין פריטים שממתינים להזמנה 🎉</td></tr>
+      <div className="space-y-4">
+        {grouped.map(([supplierName, supplierItems]) => (
+          <div key={supplierName} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+            <button
+              type="button"
+              onClick={() => setExpandedSupplier(expandedSupplier === supplierName ? null : supplierName)}
+              className="w-full p-5 flex justify-between items-center cursor-pointer hover:bg-slate-800/50 transition"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-orange-400 font-bold border border-slate-700">
+                  {supplierName.charAt(0)}
+                </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-white">{supplierName}</h3>
+                  <p className="text-sm text-slate-400">{supplierItems.length} pending items</p>
+                </div>
+              </div>
+              {expandedSupplier === supplierName ? <ChevronUp className="text-slate-500" /> : <ChevronDown className="text-slate-500" />}
+            </button>
+
+            {expandedSupplier === supplierName && (
+              <div className="border-t border-slate-800 bg-slate-950/30 p-4 overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-300">
+                  <thead className="text-slate-400 uppercase text-xs">
+                    <tr>
+                      <th className="py-2 pr-4">Order date</th>
+                      <th className="py-2 pr-4">Order #</th>
+                      <th className="py-2 pr-4">Client</th>
+                      <th className="py-2 pr-4">Type</th>
+                      <th className="py-2 pr-4">Description</th>
+                      <th className="py-2 pr-4">Qty</th>
+                      <th className="py-2 pr-0">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/70">
+                    {supplierItems.map((item, idx) => (
+                      <tr key={`${item.orderId}-${item.materialId}-${idx}`} className="hover:bg-slate-800/30 transition">
+                        <td className="py-3 pr-4 whitespace-nowrap text-slate-500">{new Date(item.orderDate).toLocaleDateString()}</td>
+                        <td className="py-3 pr-4 font-mono text-blue-400">#{item.orderNumber}</td>
+                        <td className="py-3 pr-4 font-semibold text-white">{item.clientName}</td>
+                        <td className="py-3 pr-4">
+                          <span className="text-[10px] uppercase bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                            {item.materialType}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">{item.description}</td>
+                        <td className="py-3 pr-4">{item.quantity}</td>
+                        <td className="py-3 pr-0">
+                          <button
+                            type="button"
+                            onClick={() => openOrderModal(item)}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition shadow-lg"
+                          >
+                            <Check size={14} /> Mark ordered
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
-          </tbody>
-        </table>
+          </div>
+        ))}
+
+        {items.length === 0 && !loading && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 text-center text-slate-500">
+            No pending purchasing items.
+          </div>
+        )}
       </div>
+
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl">
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-white">Mark as ordered</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  #{selectedItem.orderNumber} · {selectedItem.clientName} · {selectedItem.description}
+                </p>
+              </div>
+              <button type="button" onClick={closeOrderModal} className="text-slate-400 hover:text-white">
+                <X />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Ordered by</label>
+                <input
+                  type="text"
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                  value={orderMeta.orderedBy}
+                  onChange={(e) => setOrderMeta((prev) => ({ ...prev, orderedBy: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Ordered date</label>
+                <input
+                  type="date"
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                  value={orderMeta.orderedAt}
+                  onChange={(e) => setOrderMeta((prev) => ({ ...prev, orderedAt: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-slate-800 flex justify-end gap-3">
+              <button type="button" onClick={closeOrderModal} className="px-4 py-2 text-slate-400 hover:text-white">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitOrder}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold inline-flex items-center gap-2"
+              >
+                <Check size={18} /> Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

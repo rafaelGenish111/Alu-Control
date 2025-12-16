@@ -235,17 +235,29 @@ exports.getPendingMaterials = async (req, res) => {
 
 // 11. Mark single material as ORDERED
 exports.markMaterialOrdered = async (req, res) => {
-  const { orderId, materialId } = req.body;
+  const { orderId, materialId, orderedBy, orderedAt } = req.body;
   const userName = req.user ? req.user.name : 'System';
 
   try {
+    const effectiveOrderedBy = (typeof orderedBy === 'string' && orderedBy.trim().length > 0)
+      ? orderedBy.trim()
+      : userName;
+
+    let effectiveOrderedAt = new Date();
+    if (orderedAt) {
+      const parsed = new Date(orderedAt);
+      if (!Number.isNaN(parsed.getTime())) {
+        effectiveOrderedAt = parsed;
+      }
+    }
+
     await Order.updateOne(
       { _id: orderId, "materials._id": materialId },
       {
         $set: {
           "materials.$.isOrdered": true,
-          "materials.$.orderedAt": new Date(),
-          "materials.$.orderedBy": userName
+          "materials.$.orderedAt": effectiveOrderedAt,
+          "materials.$.orderedBy": effectiveOrderedBy
         }
       }
     );
