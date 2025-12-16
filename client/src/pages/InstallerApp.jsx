@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText } from 'lucide-react';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
+import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const InstallerApp = () => {
     const { t } = useTranslation();
@@ -12,6 +13,7 @@ const InstallerApp = () => {
     const [uploadingId, setUploadingId] = useState(null);
     const [range, setRange] = useState('today'); // today | tomorrow | week
     const [noteOrderId, setNoteOrderId] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState('');
 
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const token = user?.token;
@@ -161,15 +163,14 @@ const InstallerApp = () => {
 
                                 {/* --- MASTER PLAN BANNER (THE NEW PART) --- */}
                                 {masterPlan && (
-                                    <a
-                                        href={masterPlan.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="block bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-xl mb-6 text-center font-bold shadow-lg shadow-indigo-900/40 border border-indigo-400 flex items-center justify-center gap-3 active:scale-95 transition"
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewUrl(masterPlan.url)}
+                                        className="w-full block bg-indigo-600 hover:bg-indigo-500 text-white p-5 rounded-2xl mb-6 text-center font-bold shadow-lg shadow-indigo-900/40 border border-indigo-400 flex items-center justify-center gap-3 active:scale-95 transition"
                                     >
                                         <FileText size={24} />
-                                        <span className="text-lg">{t('view_master_plan')}</span>
-                                    </a>
+                                        <span className="text-xl">{t('view_master_plan')}</span>
+                                    </button>
                                 )}
 
                                 <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl">
@@ -251,6 +252,14 @@ const InstallerApp = () => {
                     stage="installation"
                     onClose={() => setNoteOrderId(null)}
                     onSaved={fetchJobs}
+                />
+            )}
+
+            {previewUrl && (
+                <MasterPlanPreviewModal
+                    url={previewUrl}
+                    title="Master plan"
+                    onClose={() => setPreviewUrl('')}
                 />
             )}
         </div>

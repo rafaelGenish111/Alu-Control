@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
-import { CheckCircle, X, Receipt, CreditCard } from 'lucide-react';
+import { CheckCircle, X, Receipt, CreditCard, FileText } from 'lucide-react';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
+import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const OrderApprovals = () => {
   const [orders, setOrders] = useState([]);
@@ -10,6 +11,7 @@ const OrderApprovals = () => {
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({ isIssued: false, invoiceNumber: '', isPaid: false, amount: '' });
   const [noteOrderId, setNoteOrderId] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
@@ -89,6 +91,7 @@ const OrderApprovals = () => {
               orders.map((o) => {
                 const displayOrderNumber = o.manualOrderNumber || o.orderNumber || o._id;
                 const fi = o.finalInvoice || {};
+                const masterPlan = o.files && o.files.find((f) => f.type === 'master_plan');
                 return (
                   <tr key={o._id} className="hover:bg-slate-800/30 transition">
                     <td className="p-4 font-mono text-blue-400">#{displayOrderNumber}</td>
@@ -102,6 +105,15 @@ const OrderApprovals = () => {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
+                        {masterPlan && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewUrl(masterPlan.url)}
+                            className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                          >
+                            <FileText size={14} /> Plan
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => openModal(o)}
@@ -213,6 +225,14 @@ const OrderApprovals = () => {
           stage="approval"
           onClose={() => setNoteOrderId(null)}
           onSaved={fetchOrders}
+        />
+      )}
+
+      {previewUrl && (
+        <MasterPlanPreviewModal
+          url={previewUrl}
+          title="Master plan"
+          onClose={() => setPreviewUrl('')}
         />
       )}
     </div>

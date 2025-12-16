@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Search, CheckCircle, Package, Hammer, Save, User } from 'lucide-react';
+import { X, Plus, Trash2, Search, CheckCircle, Package, Hammer, Save, User, FileText, ExternalLink } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const NewOrderModal = ({ onClose, onSuccess }) => {
@@ -37,6 +37,13 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
     const [clientSuggestions, setClientSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
+    // Master plan upload (image)
+    const [masterPlanFile, setMasterPlanFile] = useState(null);
+    const masterPlanPreviewUrl = useMemo(() => {
+        if (!masterPlanFile) return '';
+        return URL.createObjectURL(masterPlanFile);
+    }, [masterPlanFile]);
+
     // --- LOAD DATA ---
     useEffect(() => {
         const fetchSuppliers = async () => {
@@ -47,6 +54,11 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
         };
         fetchSuppliers();
     }, [config]);
+
+    useEffect(() => {
+        if (!masterPlanPreviewUrl) return undefined;
+        return () => URL.revokeObjectURL(masterPlanPreviewUrl);
+    }, [masterPlanPreviewUrl]);
 
     // --- CLIENT SEARCH (BY NAME) ---
     const handleNameChange = async (e) => {
@@ -101,15 +113,34 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
         if (materials.length === 0 && !window.confirm("No materials added for ordering. Continue?")) return;
 
         try {
-            await axios.post(`${API_URL}/orders`, {
+            const created = await axios.post(`${API_URL}/orders`, {
                 ...formData,
                 products,
                 materials
             }, config);
+
+            const orderId = created?.data?._id;
+            if (orderId && masterPlanFile) {
+                try {
+                    const fd = new FormData();
+                    fd.append('image', masterPlanFile);
+                    const uploadRes = await axios.post(`${API_URL}/upload`, fd);
+                    await axios.put(`${API_URL}/orders/${orderId}/files`, {
+                        url: uploadRes.data.url,
+                        type: 'master_plan',
+                        name: masterPlanFile.name || 'Master plan'
+                    }, config);
+                } catch (e) {
+                    console.error(e);
+                    alert('Order created, but master plan upload failed');
+                }
+            }
+
             onSuccess();
             onClose();
-        } catch (error) {
-            alert(error.response?.data?.message || 'Error creating order');
+        } catch (e) {
+            console.error(e);
+            alert(e.response?.data?.message || 'Error creating order');
         }
     };
 
@@ -219,6 +250,61 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
                             <label className="text-xs text-slate-400 block mb-1">Est. Work Days</label>
                             <input type="number" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
                                 value={formData.estimatedInstallationDays} onChange={e => setFormData({ ...formData, estimatedInstallationDays: e.target.value })} />
+                        </div>
+                    </div>
+
+                    {/* Master Plan */}
+                    <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-white font-bold">
+                                <FileText size={18} />
+                                <span>Master plan</span>
+                            </div>
+                            {masterPlanPreviewUrl ? (
+                                <a
+                                    href={masterPlanPreviewUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-indigo-300 hover:text-indigo-200 text-sm inline-flex items-center gap-1"
+                                >
+                                    Preview <ExternalLink size={12} />
+                                </a>
+                            ) : (
+                                <span className="text-xs text-slate-500">Optional</span>
+                            )}
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                            <label className="block w-full bg-slate-800 border-2 border-dashed border-slate-600 hover:border-indigo-500 text-slate-300 py-3 rounded-xl text-center cursor-pointer transition">
+                                <span className="font-bold">Upload master plan image</span>
+                                <div className="text-xs text-slate-400 mt-1">PNG/JPG/WebP</div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => setMasterPlanFile(e.target.files?.[0] || null)}
+                                />
+                            </label>
+
+                            {masterPlanPreviewUrl ? (
+                                <div className="rounded-xl overflow-hidden border border-slate-700 bg-black/30">
+                                    <img src={masterPlanPreviewUrl} alt="Master plan preview" className="w-full h-48 object-contain bg-black" />
+                                    <div className="p-2 text-xs text-slate-400 flex items-center justify-between">
+                                        <span className="truncate">{masterPlanFile?.name}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMasterPlanFile(null)}
+                                            className="text-slate-300 hover:text-white"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-sm text-slate-500 border border-slate-800 rounded-xl p-4">
+                                    No master plan uploaded yet.
+                                </div>
+                            )}
                         </div>
                     </div>
 

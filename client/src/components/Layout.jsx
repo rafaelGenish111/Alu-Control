@@ -24,36 +24,18 @@ const Layout = () => {
       roles: ['super_admin', 'admin', 'office']
     },
     {
-      label: t('customers'),
-      path: '/customers',
-      icon: <Users size={20} />,
-      roles: ['super_admin', 'admin', 'office']
-    },
-    {
       label: "Pending Items",
       path: '/procurement/pending',
       icon: <Clock size={20} />,
       roles: ['super_admin', 'admin', 'office']
     },
     {
-      label: 'Purchasing & Receiving',
+      label: 'Purchasing',
       path: '/procurement/tracking',
       icon: <Truck size={20} />,
       roles: ['super_admin', 'admin', 'office', 'production']
     },
 
-    {
-      label: t('view_suppliers'),
-      path: '/suppliers',
-      icon: <ShoppingCart size={20} />,
-      roles: ['super_admin', 'admin', 'office']
-    },
-    {
-      label: t('supplier_management'),
-      path: '/admin/suppliers',
-      icon: <ShoppingCart size={20} />,
-      roles: ['super_admin', 'admin']
-    },
     {
       label: t('production'),
       path: '/production',
@@ -88,6 +70,18 @@ const Layout = () => {
       label: t('admin_panel'),
       path: '/admin',
       icon: <Shield size={20} />,
+      roles: ['super_admin', 'admin']
+    },
+    {
+      label: t('customers'),
+      path: '/customers',
+      icon: <Users size={20} />,
+      roles: ['super_admin', 'admin', 'office']
+    },
+    {
+      label: t('supplier_management'),
+      path: '/admin/suppliers',
+      icon: <ShoppingCart size={20} />,
       roles: ['super_admin', 'admin']
     },
     {

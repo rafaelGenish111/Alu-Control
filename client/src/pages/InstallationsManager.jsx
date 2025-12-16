@@ -1,11 +1,12 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Truck, Calendar, CheckCircle, Clock } from 'lucide-react';
+import { Truck, Calendar, CheckCircle, Clock, FileText } from 'lucide-react';
 import SchedulingModal from '../components/SchedulingModal';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
 import { useNavigate } from 'react-router-dom';
+import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const InstallationsManager = () => {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ const InstallationsManager = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [activeBucket, setActiveBucket] = useState('ready_for_install');
   const [noteOrderId, setNoteOrderId] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
@@ -125,6 +127,7 @@ const InstallationsManager = () => {
                 const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
                 const depositPaid = Boolean(order.depositPaid);
                 const depositPaidAt = order.depositPaidAt ? new Date(order.depositPaidAt).toLocaleDateString() : '—';
+                const masterPlan = order.files && order.files.find((f) => f.type === 'master_plan');
 
                 return (
                   <tr key={order._id} className="hover:bg-slate-800/30 transition">
@@ -137,6 +140,15 @@ const InstallationsManager = () => {
                     <td className="p-4">
                       {activeBucket === 'ready_for_install' && (
                         <div className="flex flex-wrap gap-2">
+                          {masterPlan && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewUrl(masterPlan.url)}
+                              className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                            >
+                              <FileText size={14} /> Plan
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setSelectedOrder(order)}
@@ -155,17 +167,39 @@ const InstallationsManager = () => {
                       )}
 
                       {activeBucket === 'pending_approval' && (
-                        <button
-                          type="button"
-                          onClick={() => navigate('/approvals')}
-                          className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
-                        >
-                          Review in approvals
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          {masterPlan && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewUrl(masterPlan.url)}
+                              className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                            >
+                              <FileText size={14} /> Plan
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => navigate('/approvals')}
+                            className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
+                          >
+                            Review in approvals
+                          </button>
+                        </div>
                       )}
 
                       {activeBucket === 'scheduled' && (
-                        <span className="text-slate-500 text-xs">Scheduled</span>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {masterPlan && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewUrl(masterPlan.url)}
+                              className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                            >
+                              <FileText size={14} /> Plan
+                            </button>
+                          )}
+                          <span className="text-slate-500 text-xs">Scheduled</span>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -190,6 +224,14 @@ const InstallationsManager = () => {
           stage="scheduling"
           onClose={() => setNoteOrderId(null)}
           onSaved={fetchOrders}
+        />
+      )}
+
+      {previewUrl && (
+        <MasterPlanPreviewModal
+          url={previewUrl}
+          title="Master plan"
+          onClose={() => setPreviewUrl('')}
         />
       )}
     </div>

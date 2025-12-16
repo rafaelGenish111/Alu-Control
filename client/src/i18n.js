@@ -34,7 +34,7 @@ const resources = {
             "view_notes": "View Notes",
             "view_schedule": "View Schedule",
             "view_team": "View Team",
-            "view_suppliers": "View Suppliers",
+            "view_suppliers": "Suppliers",
             "view_clients": "View Clients",
             "view_orders": "View Orders",
             "view_installations": "View Installations",

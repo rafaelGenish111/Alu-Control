@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
-import { ShoppingCart, Check, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ShoppingCart, Check, ChevronDown, ChevronUp, X, FileText } from 'lucide-react';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
+import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const PendingMaterials = () => {
   const [items, setItems] = useState([]);
@@ -11,6 +12,7 @@ const PendingMaterials = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [orderMeta, setOrderMeta] = useState({ orderedBy: '', orderedAt: '' });
   const [noteOrderId, setNoteOrderId] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
@@ -123,6 +125,16 @@ const PendingMaterials = () => {
                         <td className="py-3 pr-4">{item.quantity}</td>
                         <td className="py-3 pr-0">
                           <div className="flex items-center gap-2">
+                            {item.masterPlanUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewUrl(item.masterPlanUrl)}
+                                className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                                title="View master plan"
+                              >
+                                <FileText size={14} /> Plan
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => openOrderModal(item)}
@@ -214,6 +226,14 @@ const PendingMaterials = () => {
           stage="procurement"
           onClose={() => setNoteOrderId(null)}
           onSaved={fetchItems}
+        />
+      )}
+
+      {previewUrl && (
+        <MasterPlanPreviewModal
+          url={previewUrl}
+          title="Master plan"
+          onClose={() => setPreviewUrl('')}
         />
       )}
     </div>

@@ -222,6 +222,25 @@ exports.getPendingMaterials = async (req, res) => {
           orderNumber: "$manualOrderNumber",
           clientName: "$clientName",
           orderDate: "$createdAt",
+          masterPlanUrl: {
+            $let: {
+              vars: {
+                mp: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: { $ifNull: ["$files", []] },
+                        as: "f",
+                        cond: { $eq: ["$$f.type", "master_plan"] }
+                      }
+                    },
+                    0
+                  ]
+                }
+              },
+              in: "$$mp.url"
+            }
+          },
           materialId: "$materials._id",
           materialType: "$materials.materialType",
           description: "$materials.description",
@@ -286,6 +305,25 @@ exports.getPurchasingStatus = async (req, res) => {
               orderId: "$_id",
               orderNumber: "$manualOrderNumber",
               clientName: "$clientName",
+              masterPlanUrl: {
+                $let: {
+                  vars: {
+                    mp: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: { $ifNull: ["$files", []] },
+                            as: "f",
+                            cond: { $eq: ["$$f.type", "master_plan"] }
+                          }
+                        },
+                        0
+                      ]
+                    }
+                  },
+                  in: "$$mp.url"
+                }
+              },
               materialId: "$materials._id",
               description: "$materials.description",
               quantity: "$materials.quantity",

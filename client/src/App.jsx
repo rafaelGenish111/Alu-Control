@@ -8,7 +8,6 @@ import AdminPanel from './pages/AdminPanel';
 import Customers from './pages/Customers';
 import CustomerProfile from './pages/CustomerProfile';
 import ClientCard from './pages/ClientCard'; // detailed order card
-import Suppliers from './pages/Suppliers';
 import Production from './pages/Production';
 import InstallerApp from './pages/InstallerApp'; // installer mobile web app
 import ActiveOrders from './pages/ActiveOrders';
@@ -58,7 +57,6 @@ function App() {
           <Route path="orders/:id" element={<ClientCard />} />
           {/* Additional sections */}
 
-          <Route path="suppliers" element={<Suppliers />} />
           <Route path="production" element={<Production />} />
           <Route path="admin/suppliers" element={<SupplierManagement />} />
           <Route path="admin/products" element={<ProductManagement />} />

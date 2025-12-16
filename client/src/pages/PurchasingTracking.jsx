@@ -1,11 +1,13 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
-import { Truck, CheckSquare, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
+import { Truck, CheckSquare, ChevronDown, ChevronUp, User, Calendar, FileText } from 'lucide-react';
 import { API_URL } from '../config/api';
+import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const PurchasingTracking = () => {
     const [suppliers, setSuppliers] = useState([]);
     const [expandedSupplier, setExpandedSupplier] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState('');
 
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const token = user?.token;
@@ -90,6 +92,16 @@ const PurchasingTracking = () => {
                                         <div key={idx} className={`flex items-center justify-between p-3 rounded-lg border ${item.isArrived ? 'bg-emerald-900/10 border-emerald-900/30' : 'bg-slate-900 border-slate-800'}`}>
 
                                             <div className="flex items-center gap-4">
+                                                {item.masterPlanUrl && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPreviewUrl(item.masterPlanUrl)}
+                                                        className="w-8 h-8 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white flex items-center justify-center border border-indigo-500/40"
+                                                        title="View master plan"
+                                                    >
+                                                        <FileText size={16} />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => toggleArrival(item.orderId, item.materialId, item.isArrived)}
                                                     className={`w-6 h-6 rounded border flex items-center justify-center transition ${item.isArrived ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-600 hover:border-emerald-500'}`}
@@ -127,6 +139,14 @@ const PurchasingTracking = () => {
                 ))}
                 {suppliers.length === 0 && <div className="text-white text-center py-10">No open purchasing orders</div>}
             </div>
+
+            {previewUrl && (
+                <MasterPlanPreviewModal
+                    url={previewUrl}
+                    title="Master plan"
+                    onClose={() => setPreviewUrl('')}
+                />
+            )}
         </div>
     );
 };
