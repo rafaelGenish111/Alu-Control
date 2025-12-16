@@ -4,7 +4,7 @@ const router = express.Router();
 const {
     getOrders, createOrder, updateOrderStatus,
     getBatchingList, markAsOrdered,
-    getCustomers, getClientHistory, getClientByPhone, getOrderById, addOrderFile
+    getCustomers, getClientHistory, getClientByPhone, getOrderById, addOrderFile, searchClients, getPendingMaterials, markMaterialOrdered, getPurchasingStatus, toggleMaterialArrival
 } = require('../controllers/orderController');
 
 // Import NEW Install Controller
@@ -17,6 +17,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.get('/', protect, getOrders);
 
 // Batching & Clients (paths קבועים)
+router.get('/clients/search', protect, searchClients);
 router.get('/batching', protect, getBatchingList);
 router.post('/batch-order', protect, authorize('super_admin', 'admin', 'office'), markAsOrdered);
 router.get('/customers/list', protect, getCustomers);
@@ -28,6 +29,11 @@ router.get('/:id', protect, getOrderById);
 router.post('/', protect, authorize('super_admin', 'admin', 'office'), createOrder);
 router.put('/:id/status', protect, updateOrderStatus);
 router.put('/:id/files', protect, addOrderFile);
+
+router.get('/procurement/pending', protect, getPendingMaterials); // רשימת המתנה להזמנה
+router.post('/procurement/order-item', protect, authorize('super_admin', 'admin', 'office'), markMaterialOrdered); // ביצוע הזמנה
+router.get('/procurement/tracking', protect, getPurchasingStatus); // דף Purchasing
+router.post('/procurement/arrive-item', protect, authorize('super_admin', 'admin', 'production'), toggleMaterialArrival); // סימון הגעה (V)
 
 // --- NEW Installation Routes ---
 // 1. Get list of installers for the dropdown

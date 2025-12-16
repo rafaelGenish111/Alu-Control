@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Plus, Package, Clock, CheckCircle } from 'lucide-react';
@@ -15,7 +15,7 @@ const ActiveOrders = () => {
     const userInfo = localStorage.getItem('userInfo');
     const user = userInfo ? JSON.parse(userInfo) : null;
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         if (!user || !user.token) {
             console.error('User not authenticated');
             setLoading(false);
@@ -39,9 +39,12 @@ const ActiveOrders = () => {
             }
             setLoading(false);
         }
-    };
+    }, [user, navigate]);
 
-    useEffect(() => { fetchOrders(); }, []);
+    // eslint-disable-next-line
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -80,15 +83,37 @@ const ActiveOrders = () => {
                     <tbody className="text-slate-300 divide-y divide-slate-800">
                         {loading ? (<tr><td colSpan="5" className="p-8 text-center">Loading...</td></tr>) :
                             orders.length === 0 ? (<tr><td colSpan="5" className="p-8 text-center text-slate-500">No open orders. All done! 🎉</td></tr>) :
-                                orders.map((order) => (
-                                    <tr key={order._id} onClick={() => navigate(`/orders/${order._id}`)} className="hover:bg-slate-800/50 transition cursor-pointer">
-                                        <td className="p-4 font-mono text-blue-400">#{order.orderNumber}</td>
-                                        <td className="p-4 font-bold text-white">{order.clientName}</td>
-                                        <td className="p-4">{order.clientAddress}</td>
-                                        <td className="p-4 text-center"><span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700">{order.items.length}</span></td>
-                                        <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${getStatusColor(order.status)}`}>{order.status.toUpperCase()}</span></td>
-                                    </tr>
-                                ))}
+                                orders.map((order) => {
+                                    const itemCount = Array.isArray(order.products)
+                                        ? order.products.length
+                                        : Array.isArray(order.items)
+                                            ? order.items.length
+                                            : 0;
+
+                                    const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
+
+                                    return (
+                                        <tr
+                                            key={order._id}
+                                            onClick={() => navigate(`/orders/${order._id}`)}
+                                            className="hover:bg-slate-800/50 transition cursor-pointer"
+                                        >
+                                            <td className="p-4 font-mono text-blue-400">#{displayOrderNumber}</td>
+                                            <td className="p-4 font-bold text-white">{order.clientName}</td>
+                                            <td className="p-4">{order.clientAddress}</td>
+                                            <td className="p-4 text-center">
+                                                <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700">
+                                                    {itemCount}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusColor(order.status)}`}>
+                                                    {String(order.status || '').toUpperCase()}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                     </tbody>
                 </table>
             </div>

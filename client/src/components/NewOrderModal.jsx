@@ -1,255 +1,283 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Search, CheckCircle, Loader } from 'lucide-react';
+import { X, Plus, Trash2, Search, CheckCircle, Package, Hammer, Save, User } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const NewOrderModal = ({ onClose, onSuccess }) => {
   const { t } = useTranslation();
-
-  // נתוני טופס לקוח
-  const [client, setClient] = useState({ name: '', phone: '', email: '', address: '', workflow: 'A' });
-
-  // נתוני פריטים
-  const [items, setItems] = useState([]);
-  const [currentItem, setCurrentItem] = useState({ productType: '', description: '', supplier: '' });
-
-  // רשימות עזר (מהשרת)
-  const [productsList, setProductsList] = useState([]);
-  const [suppliersList, setSuppliersList] = useState([]);
-
-  // סטייטים ללוגיקה
-  const [isSearching, setIsSearching] = useState(false);
-  const [clientFound, setClientFound] = useState(false);
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
-  // טעינת רשימות (מוצרים וספקים) בטעינה הראשונית
+  // --- FORM STATE ---
+  const [formData, setFormData] = useState({
+    manualOrderNumber: '',
+    clientName: '',
+    clientPhone: '',
+    clientEmail: '',
+    clientAddress: '',
+    region: '',
+    deposit: 0,
+    estimatedInstallationDays: 1
+  });
+
+  // Table 1: Client Products (No Location field)
+  const [products, setProducts] = useState([]);
+  const [newProduct, setNewProduct] = useState({ type: '', description: '', dimensions: '', quantity: 1 });
+
+  // Table 2: Materials (Only Glass, Paint, Other)
+  const [materials, setMaterials] = useState([]);
+  const [newMaterial, setNewMaterial] = useState({ materialType: 'Glass', description: '', supplier: '', quantity: 1 });
+
+  // Helpers
+  const [suppliersList, setSuppliersList] = useState([]);
+  const [clientSuggestions, setClientSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // --- LOAD DATA ---
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSuppliers = async () => {
       try {
-        const [prodRes, supRes] = await Promise.all([
-          axios.get(`${API_URL}/products`, config),
-          axios.get(`${API_URL}/suppliers`, config)
-        ]);
-        setProductsList(prodRes.data);
-        setSuppliersList(supRes.data);
-      } catch (error) { console.error("Error loading lists", error); }
+        const res = await axios.get(`${API_URL}/suppliers`, config);
+        setSuppliersList(res.data);
+      } catch (e) { console.error(e); }
     };
-    fetchData();
+    fetchSuppliers();
   }, []);
 
-  // בדיקת לקוח קיים לפי טלפון
-  const handlePhoneBlur = async () => {
-    if (!client.phone || client.phone.length < 9) return;
-
-    setIsSearching(true);
-    setClientFound(false);
-
-    try {
-      const res = await axios.get(`${API_URL}/orders/clients/lookup/${client.phone}`, config);
-
-      if (res.data.found) {
-        setClient(prev => ({
-          ...prev,
-          name: res.data.clientName,
-          address: res.data.clientAddress || '',
-          email: res.data.clientEmail || ''
-        }));
-        setClientFound(true);
+  // --- CLIENT SEARCH (BY NAME) ---
+  const handleNameChange = async (e) => {
+      const value = e.target.value;
+      setFormData({ ...formData, clientName: value });
+      
+      if (value.length > 1) {
+          try {
+              const res = await axios.get(`${API_URL}/orders/clients/search?query=${value}`, config);
+              setClientSuggestions(res.data);
+              setShowSuggestions(true);
+          } catch (e) { console.error(e); }
+      } else {
+          setShowSuggestions(false);
       }
-    } catch (error) {
-      console.error("Error looking up client", error);
-    } finally {
-      setIsSearching(false);
-    }
   };
 
-  // בחירת מוצר (לוגיקה חכמה)
-  const handleProductSelect = (e) => {
-    const selectedName = e.target.value;
-
-    // נסה למצוא את המוצר ברשימה כדי למשוך פרטים
-    const productData = productsList.find(p => p.name === selectedName);
-
-    if (productData) {
-      setCurrentItem({
-        productType: productData.name,
-        description: productData.description || '', // מילוי אוטומטי
-        supplier: productData.supplier || ''      // מילוי אוטומטי
+  const selectClient = (client) => {
+      setFormData({
+          ...formData,
+          clientName: client._id,
+          clientPhone: client.phone || '',
+          clientEmail: client.email || '',
+          clientAddress: client.address || '',
+          region: client.region || ''
       });
-    } else {
-      // אם זה מוצר חדש (טקסט חופשי), רק עדכן את השם
-      setCurrentItem({ ...currentItem, productType: selectedName });
-    }
+      setShowSuggestions(false);
   };
 
-  const addItem = () => {
-    if (!currentItem.productType) return;
-    // אם לא נבחר ספק, נשים ברירת מחדל כדי לא לשבור את המערכת
-    const itemToAdd = {
-      ...currentItem,
-      supplier: currentItem.supplier || 'General'
-    };
-    setItems([...items, itemToAdd]);
-    setCurrentItem({ productType: '', description: '', supplier: '' }); // איפוס שורה
+  // --- ADD / REMOVE ITEMS ---
+  const addProduct = () => {
+      if(!newProduct.type) return;
+      setProducts([...products, newProduct]);
+      setNewProduct({ type: '', description: '', dimensions: '', quantity: 1 });
   };
 
-  const removeItem = (index) => {
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
+  const addMaterial = () => {
+      if(!newMaterial.description) return;
+      // Default supplier if empty
+      const matToAdd = { ...newMaterial, supplier: newMaterial.supplier || 'General' };
+      setMaterials([...materials, matToAdd]);
+      setNewMaterial({ materialType: 'Glass', description: '', supplier: '', quantity: 1 });
   };
 
+  const removeProduct = (idx) => setProducts(products.filter((_, i) => i !== idx));
+  const removeMaterial = (idx) => setMaterials(materials.filter((_, i) => i !== idx));
+
+  // --- SUBMIT ---
   const handleSubmit = async () => {
-    if (!client.name || items.length === 0) return alert('Fill details and add items');
+      if (!formData.manualOrderNumber || !formData.clientName) return alert('Order Number & Name are required');
+      // Validation: Ensure at least one material if needed, or just warn
+      if (materials.length === 0 && !window.confirm("No materials added for ordering. Continue?")) return;
 
-    try {
-      await axios.post(`${API_URL}/orders`, {
-        clientName: client.name,
-        clientPhone: client.phone,
-        clientEmail: client.email,
-        clientAddress: client.address,
-        workflow: client.workflow,
-        items: items
-      }, config);
-
-      onSuccess();
-      onClose();
-    } catch (error) {
-      alert('Error creating order');
-    }
+      try {
+          await axios.post(`${API_URL}/orders`, {
+              ...formData,
+              products,
+              materials
+          }, config);
+          onSuccess();
+          onClose();
+      } catch (error) {
+          alert(error.response?.data?.message || 'Error creating order');
+      }
   };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-900 w-full max-w-3xl rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
-
-        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+      <div className="bg-slate-900 w-full max-w-5xl rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[95vh]">
+        
+        {/* Header */}
+        <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/50 rounded-t-2xl">
           <h2 className="text-xl font-bold text-white">{t('new_order')}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white"><X /></button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
-
-          {/* פרטי לקוח */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            <div className="relative">
-              <label className="text-xs text-slate-400 block mb-1">{t('phone')}</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  className={`w-full bg-slate-800 border ${clientFound ? 'border-emerald-500' : 'border-slate-600'} rounded-lg p-2 text-white pl-10`}
-                  value={client.phone}
-                  onChange={e => setClient({ ...client, phone: e.target.value })}
-                  onBlur={handlePhoneBlur}
-                  placeholder="Enter phone to auto-fill..."
-                />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  {isSearching ? <Loader className="animate-spin text-blue-500" size={16} /> :
-                    clientFound ? <CheckCircle className="text-emerald-500" size={16} /> :
-                      <Search className="text-slate-500" size={16} />}
+        <div className="p-6 overflow-y-auto flex-1 space-y-8">
+            
+            {/* SECTION 1: Client & Order Info */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                
+                {/* Manual Order # */}
+                <div className="md:col-span-1">
+                    <label className="text-xs text-blue-400 block mb-1 font-bold">Manual Order #</label>
+                    <input type="text" className="w-full bg-slate-950 border border-blue-500/50 rounded-lg p-2 text-white font-mono"
+                        value={formData.manualOrderNumber} onChange={e => setFormData({...formData, manualOrderNumber: e.target.value})} 
+                        placeholder="e.g. 2024-100" />
                 </div>
-              </div>
-            </div>
+                <div className="md:col-span-3"></div>
 
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Email</label>
-              <input type="email" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                value={client.email} onChange={e => setClient({ ...client, email: e.target.value })} />
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">{t('client_name')}</label>
-              <input type="text" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                value={client.name} onChange={e => setClient({ ...client, name: e.target.value })} />
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">{t('address')}</label>
-              <input type="text" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                value={client.address} onChange={e => setClient({ ...client, address: e.target.value })} />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="text-xs text-slate-400 block mb-1">{t('workflow')}</label>
-              <select className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                value={client.workflow} onChange={e => setClient({ ...client, workflow: e.target.value })}>
-                <option value="A">Route A (Regular)</option>
-                <option value="B">Route B (+Paint)</option>
-                <option value="C">Route C (Supply Only)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* הוספת פריטים */}
-          <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-            <h3 className="text-sm font-bold text-white mb-3">{t('items')}</h3>
-
-            <div className="flex flex-col md:flex-row gap-2 mb-4 items-end">
-
-              {/* בחירת מוצר (Smart Input) */}
-              <div className="flex-1 w-full">
-                <label className="text-[10px] text-slate-500 block mb-1">{t('product')}</label>
-                <input
-                  list="products-list"
-                  placeholder={t('select_product')}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm"
-                  value={currentItem.productType}
-                  onChange={handleProductSelect}
-                />
-                <datalist id="products-list">
-                  {productsList.map(p => <option key={p._id} value={p.name} />)}
-                </datalist>
-              </div>
-
-              {/* תיאור */}
-              <div className="flex-[2] w-full">
-                <label className="text-[10px] text-slate-500 block mb-1">{t('description')}</label>
-                <input
-                  type="text"
-                  placeholder="Auto-filled from product..."
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm"
-                  value={currentItem.description}
-                  onChange={e => setCurrentItem({ ...currentItem, description: e.target.value })}
-                />
-              </div>
-
-              {/* ספק */}
-              <div className="flex-1 w-full">
-                <label className="text-[10px] text-slate-500 block mb-1">{t('supplier')}</label>
-                <select className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm"
-                  value={currentItem.supplier} onChange={e => setCurrentItem({ ...currentItem, supplier: e.target.value })}>
-                  <option value="">Select Supplier</option>
-                  {suppliersList.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
-                </select>
-              </div>
-
-              <button onClick={addItem} className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg mb-[1px]">
-                <Plus size={20} />
-              </button>
-            </div>
-
-            {/* רשימת הפריטים שנוספו */}
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {items.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700 text-sm">
-                  <span className="text-white">
-                    <span className="font-bold">{item.productType}</span> - {item.description}
-                    <span className="text-blue-400 text-xs ml-2">({item.supplier})</span>
-                  </span>
-                  <button onClick={() => removeItem(idx)} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
+                {/* Client Name (Searchable) */}
+                <div className="md:col-span-2 relative">
+                    <label className="text-xs text-slate-400 block mb-1">{t('client_name')}</label>
+                    <div className="relative">
+                        <input type="text" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white pl-8"
+                            value={formData.clientName} onChange={handleNameChange} placeholder="Search by name..." />
+                        <User className="absolute left-2 top-2.5 text-slate-500" size={14}/>
+                    </div>
+                    
+                    {/* Suggestions */}
+                    {showSuggestions && clientSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full bg-slate-800 border border-slate-600 rounded-lg mt-1 shadow-xl max-h-40 overflow-y-auto">
+                            {clientSuggestions.map((c, i) => (
+                                <div key={i} onClick={() => selectClient(c)} 
+                                     className="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-200 border-b border-slate-700/50 last:border-0">
+                                    <span className="font-bold">{c._id}</span>
+                                    <span className="text-slate-500 ml-2 text-xs">({c.phone})</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-              ))}
-              {items.length === 0 && <p className="text-slate-500 text-xs text-center py-2">No items yet</p>}
+
+                {/* Phone */}
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">{t('phone')}</label>
+                    <input type="text" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                        value={formData.clientPhone} onChange={e => setFormData({...formData, clientPhone: e.target.value})} />
+                </div>
+                
+                {/* Region */}
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">Region</label>
+                    <input type="text" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                        value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} placeholder="Area" />
+                </div>
+                
+                {/* Address */}
+                <div className="md:col-span-2">
+                    <label className="text-xs text-slate-400 block mb-1">{t('address')}</label>
+                    <input type="text" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                        value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} />
+                </div>
+
+                {/* Deposit */}
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">Deposit (Amount)</label>
+                    <input type="number" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                        value={formData.deposit} onChange={e => setFormData({...formData, deposit: e.target.value})} />
+                </div>
+
+                {/* Est. Days */}
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">Est. Work Days</label>
+                    <input type="number" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                        value={formData.estimatedInstallationDays} onChange={e => setFormData({...formData, estimatedInstallationDays: e.target.value})} />
+                </div>
             </div>
-          </div>
+
+            <hr className="border-slate-800"/>
+
+            {/* SECTION 2: Client Products */}
+            <div>
+                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><Package className="text-purple-400"/> Products for Client</h3>
+                
+                {/* Input Row */}
+                <div className="flex flex-col md:flex-row gap-2 mb-3 bg-slate-800 p-3 rounded-xl border border-slate-700">
+                    <input type="text" placeholder="Type (Window/Door)" className="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newProduct.type} onChange={e => setNewProduct({...newProduct, type: e.target.value})} />
+                    
+                    <input type="text" placeholder="Description" className="flex-[2] bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
+                    
+                    <input type="text" placeholder="Dims" className="w-24 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newProduct.dimensions} onChange={e => setNewProduct({...newProduct, dimensions: e.target.value})} />
+                    
+                    <input type="number" placeholder="Qty" className="w-20 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newProduct.quantity} onChange={e => setNewProduct({...newProduct, quantity: e.target.value})} />
+                    
+                    <button onClick={addProduct} className="bg-purple-600 hover:bg-purple-500 text-white p-2 rounded"><Plus/></button>
+                </div>
+
+                {/* Table */}
+                {products.length > 0 && (
+                    <div className="bg-slate-900 rounded border border-slate-800">
+                        {products.map((p, i) => (
+                            <div key={i} className="flex justify-between items-center p-2 border-b border-slate-800 text-sm text-slate-300 last:border-0">
+                                <span>{p.quantity}x <b>{p.type}</b> - {p.description} <span className="text-xs text-slate-500 ml-2">[{p.dimensions}]</span></span>
+                                <button onClick={() => removeProduct(i)} className="text-slate-500 hover:text-red-400"><Trash2 size={16}/></button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* SECTION 3: Materials */}
+            <div>
+                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><Hammer className="text-orange-400"/> Materials to Order</h3>
+                
+                <div className="flex flex-col md:flex-row gap-2 mb-3 bg-slate-800 p-3 rounded-xl border border-slate-700">
+                    <select className="bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newMaterial.materialType} onChange={e => setNewMaterial({...newMaterial, materialType: e.target.value})}>
+                        <option value="Glass">Glass</option>
+                        <option value="Paint">Paint</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    
+                    <input type="text" placeholder="Material Description" className="flex-[2] bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newMaterial.description} onChange={e => setNewMaterial({...newMaterial, description: e.target.value})} />
+                    
+                    <select className="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newMaterial.supplier} onChange={e => setNewMaterial({...newMaterial, supplier: e.target.value})}>
+                        <option value="">Select Supplier</option>
+                        {suppliersList.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
+                    </select>
+
+                    <input type="number" placeholder="Qty" className="w-20 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
+                        value={newMaterial.quantity} onChange={e => setNewMaterial({...newMaterial, quantity: e.target.value})} />
+                    
+                    <button onClick={addMaterial} className="bg-orange-600 hover:bg-orange-500 text-white p-2 rounded"><Plus/></button>
+                </div>
+
+                {materials.length > 0 && (
+                    <div className="bg-slate-900 rounded border border-slate-800">
+                        {materials.map((m, i) => (
+                            <div key={i} className="flex justify-between items-center p-2 border-b border-slate-800 text-sm text-slate-300 last:border-0">
+                                <span className="flex items-center gap-2">
+                                    <span className="text-[10px] uppercase bg-slate-800 px-1 rounded border border-slate-700">{m.materialType}</span>
+                                    {m.quantity}x {m.description}
+                                </span>
+                                <span className="text-orange-400 text-xs">{m.supplier}</span>
+                                <button onClick={() => removeMaterial(i)} className="text-slate-500 hover:text-red-400"><Trash2 size={16}/></button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
         </div>
 
-        <div className="p-6 border-t border-slate-800 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white">{t('cancel')}</button>
-          <button onClick={handleSubmit} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg">
-            {t('save_order')}
+        <div className="p-5 border-t border-slate-800 flex justify-end gap-3 bg-slate-900 rounded-b-2xl">
+          <button onClick={onClose} className="px-6 py-2 text-slate-400 hover:text-white">{t('cancel')}</button>
+          <button onClick={handleSubmit} className="px-8 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg flex items-center gap-2">
+             <Save size={18}/> Create Order
           </button>
         </div>
       </div>

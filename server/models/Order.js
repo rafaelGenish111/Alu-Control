@@ -1,69 +1,72 @@
 const mongoose = require('mongoose');
 
 const OrderSchema = new mongoose.Schema({
-  // --- פרטים כלליים ---
-  manualOrderNumber: { type: String, required: true, unique: true }, // מס' הזמנה ידני (מערכת חיצונית)
+  // --- General Information ---
+  manualOrderNumber: { type: String, required: true, unique: true }, // Identifier from external system
   clientName: { type: String, required: true },
   clientPhone: String,
   clientEmail: String,
   clientAddress: String,
-  region: { type: String }, // אזור (הוספנו)
+  region: { type: String }, // e.g., 'North', 'Center', 'Tel Aviv'
   
-  // --- סטטוס כללי של ההזמנה ---
+  // --- Overall Order Status ---
   status: {
     type: String,
     enum: [
-      'new',                // הזמנה חדשה
-      'materials_pending',  // ממתין להזמנת חומרים
-      'production_pending', // חומרים הוזמנו, ממתין להגעת חומרים/ייצור
-      'in_production',      // בייצור בפועל
-      'ready_for_install',  // סיים ייצור - ממתין לשיבוץ
-      'scheduled',          // משובץ להתקנה
-      'installed',          // התקנה הסתיימה בשטח (ממתין לסגירה)
-      'completed'           // סגור חשבונאית וארכיון
+      'new',                // Recently created
+      'materials_pending',  // Waiting for materials to be ordered
+      'production_pending', // Materials ordered, waiting for arrival
+      'in_production',      // Currently being manufactured
+      'ready_for_install',  // Finished production, ready for scheduling
+      'scheduled',          // Scheduled for installation
+      'installed',          // Installation done on site (pending final approval)
+      'completed'           // Financially closed and archived
     ],
     default: 'new'
   },
 
-  // --- מוצרים ללקוח (מה הלקוח מקבל - חלון, דלת...) ---
+  // --- Table 1: Products for Client (What the customer sees) ---
+  // e.g., "Living Room Window", "Kitchen Door"
   products: [{
-    type: { type: String }, // למשל: חלון קיפ
-    location: { type: String }, // למשל: סלון
+    type: { type: String }, // Product Type (Window, Door, Showcase)
+    location: { type: String }, // e.g., "Living Room"
     description: { type: String },
     dimensions: { type: String },
     quantity: { type: Number, default: 1 }
   }],
 
-  // --- חומרים להזמנה (מה המפעל מזמין - זכוכית, צבע, פרזול) ---
+  // --- Table 2: Materials for Factory (What needs to be ordered) ---
+  // e.g., "Glass 6+6", "Profile 7000", "Paint RAL 9010"
   materials: [{
     materialType: { type: String, enum: ['Glass', 'Aluminum', 'Paint', 'Hardware', 'Other'] },
-    description: { type: String }, // למשל: זכוכית בידודית 6+6
-    supplier: { type: String }, // שם הספק
-    quantity: { type: Number },
+    description: { type: String },
+    supplier: { type: String }, // Supplier Name
+    quantity: { type: Number, default: 1 },
     
-    // סטטוס רכש לכל שורה
-    isOrdered: { type: Boolean, default: false }, // האם הוצאה הזמנה לספק?
+    // Procurement Status (Per item tracking)
+    isOrdered: { type: Boolean, default: false },
     orderedAt: { type: Date },
-    orderedBy: { type: String }, // מי המשתמש שהזמין
+    orderedBy: { type: String },
     
-    isArrived: { type: Boolean, default: false }, // האם הגיע למפעל?
+    // Arrival Status (Warehouse Checklist)
+    isArrived: { type: Boolean, default: false },
     arrivedAt: { type: Date }
   }],
 
-  // --- סטטוסים לייצור (רמזור) ---
-  // האם הפריטים הרלוונטיים הגיעו?
+  // --- Production Traffic Light System ---
+  // Granular status for the production manager
   productionStatus: {
-    glass: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'pending' },
-    paint: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'pending' },
-    aluminum: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'pending' },
-    hardware: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'pending' }
+    glass: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'not_needed' },
+    paint: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'not_needed' },
+    aluminum: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'not_needed' },
+    hardware: { type: String, enum: ['not_needed', 'pending', 'arrived'], default: 'not_needed' }
   },
 
-  // --- כספים וזמנים ---
-  estimatedInstallationDays: { type: Number, default: 1 }, // הערכת ימי עבודה
-  deposit: { type: Number, default: 0 }, // מקדמה ששולמה
+  // --- Finance & Time Estimation ---
+  estimatedInstallationDays: { type: Number, default: 1 },
+  deposit: { type: Number, default: 0 }, // Down payment
   
-  // סגירת חשבון
+  // Final Closure Details
   finalInvoice: {
     isIssued: { type: Boolean, default: false },
     invoiceNumber: { type: String },
@@ -71,22 +74,22 @@ const OrderSchema = new mongoose.Schema({
     isPaid: { type: Boolean, default: false }
   },
 
-  // --- קבצים ---
+  // --- Files & Media ---
   files: [{
     name: String,
-    url: String,
+    url: String, // Cloudinary URL
     type: { type: String, enum: ['master_plan', 'document', 'site_photo'] },
     uploadedAt: { type: Date, default: Date.now },
     uploadedBy: { type: String }
   }],
 
-  // --- שיבוץ התקנה ---
+  // --- Installation Scheduling ---
   installers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   installDateStart: { type: Date },
   installDateEnd: { type: Date },
   installationNotes: { type: String },
 
-  // --- לוג ---
+  // --- Audit Log ---
   timeline: [{
     status: String,
     date: { type: Date, default: Date.now },

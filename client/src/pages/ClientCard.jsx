@@ -265,14 +265,20 @@ const ClientCard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
-                  {order.items.map((item, i) => (
-                    <tr key={i}>
-                      <td className="p-3 font-medium text-white">{item.productType}</td>
-                      <td className="p-3">{item.description}</td>
-                      <td className="p-3 text-blue-300">{item.supplier}</td>
-                      <td className="p-3">{item.isOrdered ? '✅' : '⏳'}</td>
-                    </tr>
-                  ))}
+                  {(Array.isArray(order.materials) ? order.materials : (order.items || [])).map((item, i) => {
+                    const productLabel = item.productType || item.materialType || item.type || '-';
+                    const supplierLabel = item.supplier || '-';
+                    const isOrdered = typeof item.isOrdered === 'boolean' ? item.isOrdered : false;
+
+                    return (
+                      <tr key={i}>
+                        <td className="p-3 font-medium text-white">{productLabel}</td>
+                        <td className="p-3">{item.description}</td>
+                        <td className="p-3 text-blue-300">{supplierLabel}</td>
+                        <td className="p-3">{isOrdered ? '✅' : '⏳'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

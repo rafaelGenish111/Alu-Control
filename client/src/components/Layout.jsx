@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Package } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Package, Clock, Truck } from 'lucide-react';
 
 const Layout = () => {
   const { t, i18n } = useTranslation();
@@ -30,8 +30,22 @@ const Layout = () => {
       roles: ['super_admin', 'admin', 'office']
     },
     {
-      label: t('suppliers'),
-      path: '/suppliers',
+      label: "Pending Items",
+      path: '/procurement/pending',
+      icon: <Clock size={20} />, // או אייקון מתאים אחר
+      roles: ['super_admin', 'admin', 'office']
+    },
+    {
+      label: t('Purchasing & Receiving'),
+      path: '/procurement/tracking',
+      icon: <Truck size={20} />,
+      roles: ['super_admin', 'admin', 'office', 'production'] // גם ייצור צריכים לראות
+    },
+    
+    // 2. דף ספקים (אינדקס)
+    {
+      label: t('view_suppliers'), // או "אינדקס ספקים"
+      path: '/suppliers', // הנתיב הישן של Suppliers.jsx
       icon: <ShoppingCart size={20} />,
       roles: ['super_admin', 'admin', 'office']
     },

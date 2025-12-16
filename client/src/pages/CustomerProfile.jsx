@@ -18,18 +18,29 @@ const CustomerProfile = () => {
 
   useEffect(() => {
     const fetchHistory = async () => {
+      if (!user || !user.token) {
+        console.error('User not authenticated');
+        setLoading(false);
+        navigate('/login');
+        return;
+      }
+
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
         const res = await axios.get(`${API_URL}/orders/customers/${encodeURIComponent(name)}/history`, config);
-        setHistory(res.data);
+        setHistory(res.data || []);
         setLoading(false);
       } catch (error) { 
         console.error(error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem('userInfo');
+          navigate('/login');
+        }
         setLoading(false);
       }
     };
     fetchHistory();
-  }, [name]);
+  }, [name, navigate, user]);
 
   if (loading) return <div className="text-white p-8 text-center">Loading Profile...</div>;
 
@@ -120,7 +131,18 @@ const CustomerProfile = () => {
       </h3>
       
       <div className="space-y-4">
-        {history.map(order => (
+        {(history || []).map(order => {
+          const itemCount = Array.isArray(order.products)
+            ? order.products.length
+            : Array.isArray(order.items)
+              ? order.items.length
+              : Array.isArray(order.materials)
+                ? order.materials.length
+                : 0;
+
+          const workflowLabel = order.workflow ? `Route ${order.workflow}` : '';
+
+          return (
             <div 
                 key={order._id} 
                 onClick={() => navigate(`/orders/${order._id}`)} 
@@ -135,7 +157,7 @@ const CustomerProfile = () => {
                             <Calendar size={14}/> {new Date(order.createdAt).toLocaleDateString()}
                         </div>
                         <div className="text-slate-500 text-xs">
-                            {order.items.length} items • {order.workflow ? `Route ${order.workflow}` : ''}
+                            {itemCount} items{workflowLabel ? ` • ${workflowLabel}` : ''}
                         </div>
                     </div>
                 </div>
@@ -151,7 +173,8 @@ const CustomerProfile = () => {
                     <ArrowLeft size={20} className="rotate-180" /> 
                 </div>
             </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

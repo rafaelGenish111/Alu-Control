@@ -1,9 +1,10 @@
 const Order = require('../models/Order');
 
-// 1. Get all orders (with basic sorting)
+// --- CRM & ORDER MANAGEMENT ---
+
+// 1. Get all orders (sorted by newest)
 exports.getOrders = async (req, res) => {
   try {
-    // newest first
     const orders = await Order.find({}).sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
@@ -11,123 +12,7 @@ exports.getOrders = async (req, res) => {
   }
 };
 
-// 2. Create a new order
-exports.createOrder = async (req, res) => {
-  const { clientName, clientPhone, clientEmail, clientAddress, workflow, items } = req.body;
-
-  try {
-    // Generate automatic order number (e.g. 1001, 1002...)
-    const count = await Order.countDocuments();
-    const orderNumber = 1000 + count + 1;
-
-    const order = new Order({
-      orderNumber,
-      clientName,
-      clientPhone,
-      clientEmail,
-      clientAddress,
-      workflow,
-      items, // array of items (windows, showcases, etc.)
-      status: 'production' // initial status
-    });
-
-    const createdOrder = await order.save();
-    res.status(201).json(createdOrder);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-// 3. Update order status
-exports.updateOrderStatus = async (req, res) => {
-  const { status } = req.body;
-  try {
-    const order = await Order.findById(req.params.id);
-    if (order) {
-      order.status = status;
-      const updatedOrder = await order.save();
-      res.json(updatedOrder);
-    } else {
-      res.status(404).json({ message: 'Order not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// 4. Get purchasing list (grouped by supplier)
-exports.getBatchingList = async (req, res) => {
-  try {
-    const pipeline = [
-      // 1. Filter: only active orders (exclude offers and completed)
-      { $match: { status: { $nin: ['offer', 'completed'] } } },
-
-      // 2. Unwind items so each item becomes its own row
-      { $unwind: "$items" },
-
-      // 3. Filter items: keep only ones that are not yet ordered
-      { $match: { "items.isOrdered": false } },
-
-      // 4. Group by supplier name
-      {
-        $group: {
-          _id: "$items.supplier",
-          totalItems: { $sum: 1 },
-          items: {
-            $push: {
-              description: "$items.description",
-              productType: "$items.productType",
-              clientName: "$clientName",
-              orderNumber: "$orderNumber",
-              orderId: "$_id",
-              itemId: "$items._id"
-            }
-          }
-        }
-      }
-    ];
-
-    const batchList = await Order.aggregate(pipeline);
-    res.json(batchList);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// 5. Mark items as ordered for a given supplier
-exports.markAsOrdered = async (req, res) => {
-  const { supplier } = req.body;
-
-  try {
-    // Smart update: find every order with items for this supplier that are not ordered yet and mark them ordered
-    await Order.updateMany(
-      { "items.supplier": supplier, "items.isOrdered": false },
-      { $set: { "items.$[elem].isOrdered": true } },
-      { arrayFilters: [{ "elem.supplier": supplier, "elem.isOrdered": false }] }
-    );
-
-    res.json({ message: `All items for ${supplier} marked as ordered` });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.addFileToOrder = async (req, res) => {
-  const { url, fileType } = req.body;
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-
-    order.files.push({ url, fileType });
-    await order.save();
-
-    res.json(order);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// 6. Get a single order by ID
+// 2. Get Single Order by ID
 exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -141,67 +26,128 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-// 7. Add a file to an order (save link in DB)
+// 3. Create Order (V2 Structure)
+exports.createOrder = async (req, res) => {
+  try {
+    const {
+      manualOrderNumber, clientName, clientPhone, clientEmail,
+      clientAddress, region, deposit, estimatedInstallationDays,
+      products, materials
+    } = req.body;
+
+    // Check for duplicate manual order number
+    const exists = await Order.findOne({ manualOrderNumber });
+    if (exists) {
+      return res.status(400).json({ message: 'Order Number already exists' });
+    }
+
+    // Calculate initial production status (Traffic Light) based on materials
+    const prodStatus = {
+      glass: materials.some(m => m.materialType === 'Glass') ? 'pending' : 'not_needed',
+      paint: materials.some(m => m.materialType === 'Paint') ? 'pending' : 'not_needed',
+      aluminum: materials.some(m => m.materialType === 'Aluminum') ? 'pending' : 'not_needed',
+      hardware: materials.some(m => m.materialType === 'Hardware') ? 'pending' : 'not_needed',
+    };
+
+    // Determine initial status: if materials needed -> materials_pending, else -> production
+    const initialStatus = materials.length > 0 ? 'materials_pending' : 'production';
+
+    const order = new Order({
+      manualOrderNumber,
+      clientName, clientPhone, clientEmail, clientAddress, region,
+      deposit, estimatedInstallationDays,
+      products,   // Client items (Window, Door...)
+      materials,  // Factory items (Glass, Paint...)
+      productionStatus: prodStatus,
+      status: initialStatus,
+      timeline: [{ status: 'created', note: 'Order created', date: new Date(), user: req.user ? req.user.name : 'System' }]
+    });
+
+    const createdOrder = await order.save();
+    res.status(201).json(createdOrder);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// 4. Update Order Status
+exports.updateOrderStatus = async (req, res) => {
+  const { status } = req.body;
+  try {
+    const order = await Order.findById(req.params.id);
+    if (order) {
+      order.status = status;
+      order.timeline.push({
+        status,
+        note: `Status updated to ${status}`,
+        date: new Date(),
+        user: req.user ? req.user.name : 'System'
+      });
+      const updatedOrder = await order.save();
+      res.json(updatedOrder);
+    } else {
+      res.status(404).json({ message: 'Order not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 5. Add File to Order
 exports.addOrderFile = async (req, res) => {
-  const { url, type, name } = req.body; // receive file link and metadata from client
+  const { url, type, name } = req.body;
 
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    // push into the files array
     order.files.push({
       url,
-      type: type || 'photo',
+      type: type || 'document',
       name: name || 'Uploaded File',
-      uploadedAt: new Date()
+      uploadedAt: new Date(),
+      uploadedBy: req.user ? req.user.name : 'System'
     });
 
     await order.save();
-    res.json(order); // return updated order
+    res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// 8. Get customers list (group by client name)
-exports.getCustomers = async (req, res) => {
+// --- CLIENT MANAGEMENT ---
+
+// 6. Search Clients by Name (Autocomplete)
+exports.searchClients = async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.json([]);
+
   try {
-    const customers = await Order.aggregate([
+    const clients = await Order.aggregate([
+      { $match: { clientName: { $regex: query, $options: 'i' } } },
+      { $sort: { createdAt: -1 } },
       {
         $group: {
-          _id: "$clientName", // group by client name
-          phone: { $first: "$clientPhone" }, // take phone from first matching order
+          _id: "$clientName",
+          phone: { $first: "$clientPhone" },
+          email: { $first: "$clientEmail" },
           address: { $first: "$clientAddress" },
-          lastOrderDate: { $max: "$createdAt" },
-          totalOrders: { $sum: 1 }
+          region: { $first: "$region" }
         }
       },
-      { $sort: { lastOrderDate: -1 } } // show most recently active customers first
+      { $limit: 5 }
     ]);
-    res.json(customers);
+    res.json(clients);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// 9. Get order history for a specific customer
-exports.getClientHistory = async (req, res) => {
-  // name comes from URL – decoded so spaces and non-ASCII names are handled correctly
-  const clientName = decodeURIComponent(req.params.name);
-
-  try {
-    const orders = await Order.find({ clientName: clientName }).sort({ createdAt: -1 });
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
+// 7. Get Client by Phone (Auto-fill)
 exports.getClientByPhone = async (req, res) => {
   const { phone } = req.params;
   try {
-    // Take the newest order for this phone number
     const existingOrder = await Order.findOne({ clientPhone: phone }).sort({ createdAt: -1 });
 
     if (existingOrder) {
@@ -217,4 +163,184 @@ exports.getClientByPhone = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// 8. Get All Customers List (Grouped)
+exports.getCustomers = async (req, res) => {
+  try {
+    const customers = await Order.aggregate([
+      {
+        $group: {
+          _id: "$clientName",
+          phone: { $first: "$clientPhone" },
+          address: { $first: "$clientAddress" },
+          lastOrderDate: { $max: "$createdAt" },
+          totalOrders: { $sum: 1 }
+        }
+      },
+      { $sort: { lastOrderDate: -1 } }
+    ]);
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 9. Get Client History
+exports.getClientHistory = async (req, res) => {
+  const clientName = decodeURIComponent(req.params.name);
+  try {
+    const orders = await Order.find({ clientName: clientName }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// --- PROCUREMENT (PURCHASING) LOGIC ---
+
+// 10. Get Pending Materials (Flat list for "Pending Items" page)
+exports.getPendingMaterials = async (req, res) => {
+  try {
+    const materials = await Order.aggregate([
+      { $match: { status: { $nin: ['completed', 'cancelled'] } } },
+      { $unwind: "$materials" },
+      { $match: { "materials.isOrdered": false } },
+      { $sort: { createdAt: 1 } },
+      {
+        $project: {
+          _id: 0,
+          orderId: "$_id",
+          orderNumber: "$manualOrderNumber",
+          clientName: "$clientName",
+          orderDate: "$createdAt",
+          materialId: "$materials._id",
+          materialType: "$materials.materialType",
+          description: "$materials.description",
+          supplier: "$materials.supplier",
+          quantity: "$materials.quantity"
+        }
+      }
+    ]);
+    res.json(materials);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 11. Mark single material as ORDERED
+exports.markMaterialOrdered = async (req, res) => {
+  const { orderId, materialId } = req.body;
+  const userName = req.user ? req.user.name : 'System';
+
+  try {
+    await Order.updateOne(
+      { _id: orderId, "materials._id": materialId },
+      {
+        $set: {
+          "materials.$.isOrdered": true,
+          "materials.$.orderedAt": new Date(),
+          "materials.$.orderedBy": userName
+        }
+      }
+    );
+    res.json({ message: 'Material marked as ordered' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 12. Get Purchasing Status (Tracking / Checklist)
+exports.getPurchasingStatus = async (req, res) => {
+  try {
+    const pipeline = [
+      { $match: { status: { $nin: ['completed'] } } },
+      { $unwind: "$materials" },
+      { $match: { "materials.isOrdered": true } }, // Show only ordered items
+      { $sort: { "materials.orderedAt": -1 } },
+      {
+        $group: {
+          _id: "$materials.supplier",
+          items: {
+            $push: {
+              orderId: "$_id",
+              orderNumber: "$manualOrderNumber",
+              clientName: "$clientName",
+              materialId: "$materials._id",
+              description: "$materials.description",
+              quantity: "$materials.quantity",
+              orderedAt: "$materials.orderedAt",
+              orderedBy: "$materials.orderedBy",
+              isArrived: "$materials.isArrived",
+              arrivedAt: "$materials.arrivedAt"
+            }
+          }
+        }
+      }
+    ];
+    const results = await Order.aggregate(pipeline);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 13. Toggle Material Arrival (Checklist V) + Auto Update Production Status
+exports.toggleMaterialArrival = async (req, res) => {
+  const { orderId, materialId, isArrived } = req.body;
+
+  try {
+    // 1. Update specific material status
+    await Order.updateOne(
+      { _id: orderId, "materials._id": materialId },
+      {
+        $set: {
+          "materials.$.isArrived": isArrived,
+          "materials.$.arrivedAt": isArrived ? new Date() : null
+        }
+      }
+    );
+
+    // 2. Recalculate Production Status (Traffic Light)
+    const order = await Order.findById(orderId);
+
+    const updateCategoryStatus = (category) => {
+      const relevantMaterials = order.materials.filter(m => m.materialType === category);
+      if (relevantMaterials.length === 0) return 'not_needed';
+      const allArrived = relevantMaterials.every(m => m.isArrived);
+      return allArrived ? 'arrived' : 'pending';
+    };
+
+    order.productionStatus.glass = updateCategoryStatus('Glass');
+    order.productionStatus.paint = updateCategoryStatus('Paint');
+    order.productionStatus.aluminum = updateCategoryStatus('Aluminum');
+    order.productionStatus.hardware = updateCategoryStatus('Hardware');
+    order.productionStatus.other = updateCategoryStatus('Other');
+
+    // 3. Auto-update main status if everything arrived
+    const allMaterialsArrived = order.materials.every(m => m.isArrived);
+    if (allMaterialsArrived && order.status === 'materials_pending') {
+      order.status = 'production_pending'; // Ready for production
+      order.timeline.push({ status: 'production_pending', note: 'All materials arrived', date: new Date() });
+    }
+
+    await order.save();
+    res.json({ message: 'Arrival status updated', productionStatus: order.productionStatus });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --------------------------------------------------------
+// Legacy / Helper Exports (For backward compatibility if needed)
+// --------------------------------------------------------
+exports.getBatchingList = async (req, res) => {
+  // Legacy function, can be deprecated in favor of getPendingMaterials
+  res.json([]);
+};
+
+exports.markAsOrdered = async (req, res) => {
+  // Legacy function, can be deprecated in favor of markMaterialOrdered
+  res.json({ message: 'Deprecated' });
 };

@@ -16,6 +16,9 @@ import SupplierManagement from './pages/SupplierManagement';
 import InstallationsManager from './pages/InstallationsManager';
 import CalendarView from './pages/CalendarView';
 import ProductManagement from './pages/ProductManagement';
+import PendingMaterials from './pages/PendingMaterials';
+import PurchasingTracking from './pages/PurchasingTracking';
+
 // Simple auth guard – checks if a user is logged in
 const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem('userInfo');
@@ -59,6 +62,8 @@ function App() {
           <Route path="admin/products" element={<ProductManagement />} />
           <Route path="installations" element={<InstallationsManager />} />
           <Route path="calendar" element={<CalendarView />} />
+          <Route path="procurement/pending" element={<PendingMaterials />} />
+          <Route path="procurement/tracking" element={<PurchasingTracking />} />
         </Route>
       </Routes>
     </BrowserRouter>
