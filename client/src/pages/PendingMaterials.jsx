@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { ShoppingCart, Check, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { API_URL } from '../config/api';
+import NoteModal from '../components/NoteModal';
 
 const PendingMaterials = () => {
   const [items, setItems] = useState([]);
@@ -9,6 +10,7 @@ const PendingMaterials = () => {
   const [expandedSupplier, setExpandedSupplier] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [orderMeta, setOrderMeta] = useState({ orderedBy: '', orderedAt: '' });
+  const [noteOrderId, setNoteOrderId] = useState(null);
 
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
@@ -59,7 +61,7 @@ const PendingMaterials = () => {
         orderedAt: orderMeta.orderedAt
       }, config);
       closeOrderModal();
-      fetchItems(); // רענון - השורה תיעלם כי היא עברה ל-Purchasing
+      fetchItems(); // refresh
     } catch (e) {
       console.error(e);
       alert('Error');
@@ -120,13 +122,22 @@ const PendingMaterials = () => {
                         <td className="py-3 pr-4">{item.description}</td>
                         <td className="py-3 pr-4">{item.quantity}</td>
                         <td className="py-3 pr-0">
-                          <button
-                            type="button"
-                            onClick={() => openOrderModal(item)}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition shadow-lg"
-                          >
-                            <Check size={14} /> Mark ordered
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openOrderModal(item)}
+                              className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition shadow-lg"
+                            >
+                              <Check size={14} /> Mark ordered
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNoteOrderId(item.orderId)}
+                              className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
+                            >
+                              Add note
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -195,6 +206,15 @@ const PendingMaterials = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {noteOrderId && (
+        <NoteModal
+          orderId={noteOrderId}
+          stage="procurement"
+          onClose={() => setNoteOrderId(null)}
+          onSaved={fetchItems}
+        />
       )}
     </div>
   );

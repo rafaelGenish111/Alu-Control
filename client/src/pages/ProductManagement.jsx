@@ -7,17 +7,17 @@ import { API_URL } from '../config/api';
 const ProductManagement = () => {
     const { t } = useTranslation();
     const [products, setProducts] = useState([]);
-    const [suppliers, setSuppliers] = useState([]); // לשליפת ספקים בטופס
+    const [suppliers, setSuppliers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // טופס מוצר
+    // Product form
     const [formData, setFormData] = useState({
         name: '', sku: '', category: '', description: '', supplier: '', dimensions: '', color: ''
     });
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
-    // טעינת נתונים
+    // Load data
     const fetchData = async () => {
         try {
             const [prodRes, supRes] = await Promise.all([
@@ -31,7 +31,7 @@ const ProductManagement = () => {
 
     useEffect(() => { fetchData(); }, []);
 
-    // שליפת רשימת קטגוריות ייחודיות קיימות (לצורך Autocomplete)
+    // Unique categories list (for autocomplete)
     const existingCategories = [...new Set(products.map(p => p.category))];
 
     const handleSubmit = async (e) => {

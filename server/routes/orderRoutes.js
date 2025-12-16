@@ -4,7 +4,9 @@ const router = express.Router();
 const {
     getOrders, createOrder, updateOrderStatus,
     getBatchingList, markAsOrdered,
-    getCustomers, getClientHistory, getClientByPhone, getOrderById, addOrderFile, searchClients, getPendingMaterials, markMaterialOrdered, getPurchasingStatus, toggleMaterialArrival
+    getCustomers, getClientHistory, getClientByPhone, getOrderById, addOrderFile, searchClients, getPendingMaterials, markMaterialOrdered, getPurchasingStatus, toggleMaterialArrival,
+    updateFinalInvoice,
+    addOrderNote
 } = require('../controllers/orderController');
 
 // Import NEW Install Controller
@@ -28,6 +30,8 @@ router.get('/clients/lookup/:phone', protect, getClientByPhone);
 router.get('/:id', protect, getOrderById);
 router.post('/', protect, authorize('super_admin', 'admin', 'office'), createOrder);
 router.put('/:id/status', protect, updateOrderStatus);
+router.put('/:id/final-invoice', protect, authorize('super_admin', 'admin', 'office'), updateFinalInvoice);
+router.post('/:id/notes', protect, addOrderNote);
 router.put('/:id/files', protect, addOrderFile);
 
 router.get('/procurement/pending', protect, getPendingMaterials); // רשימת המתנה להזמנה

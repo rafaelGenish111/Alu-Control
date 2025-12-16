@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Package, Clock, Truck } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Clock, Truck, Calendar as CalendarIcon, CheckCircle } from 'lucide-react';
 
 const Layout = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -32,22 +32,27 @@ const Layout = () => {
     {
       label: "Pending Items",
       path: '/procurement/pending',
-      icon: <Clock size={20} />, // או אייקון מתאים אחר
+      icon: <Clock size={20} />,
       roles: ['super_admin', 'admin', 'office']
     },
     {
-      label: t('Purchasing & Receiving'),
+      label: 'Purchasing & Receiving',
       path: '/procurement/tracking',
       icon: <Truck size={20} />,
-      roles: ['super_admin', 'admin', 'office', 'production'] // גם ייצור צריכים לראות
+      roles: ['super_admin', 'admin', 'office', 'production']
     },
     
-    // 2. דף ספקים (אינדקס)
     {
-      label: t('view_suppliers'), // או "אינדקס ספקים"
-      path: '/suppliers', // הנתיב הישן של Suppliers.jsx
+      label: t('view_suppliers'),
+      path: '/suppliers',
       icon: <ShoppingCart size={20} />,
       roles: ['super_admin', 'admin', 'office']
+    },
+    {
+      label: t('supplier_management'),
+      path: '/admin/suppliers',
+      icon: <ShoppingCart size={20} />,
+      roles: ['super_admin', 'admin']
     },
     {
       label: t('production'),
@@ -55,14 +60,24 @@ const Layout = () => {
       icon: <Factory size={20} />,
       roles: ['super_admin', 'admin', 'production']
     },
-    // --- כפתור חדש: קטלוג מוצרים ---
     {
-      label: t('product_management'), 
-      path: '/admin/products', 
-      icon: <Package size={20} />, 
-      roles: ['super_admin', 'admin']
+      label: t('calendar'),
+      path: '/calendar',
+      icon: <CalendarIcon size={20} />,
+      roles: ['super_admin', 'admin', 'office', 'production', 'installer']
     },
-    // -----------------------------
+    {
+      label: 'Approvals',
+      path: '/approvals',
+      icon: <CheckCircle size={20} />,
+      roles: ['super_admin', 'admin', 'office']
+    },
+    {
+      label: 'Completed orders',
+      path: '/completed',
+      icon: <CheckCircle size={20} />,
+      roles: ['super_admin', 'admin', 'office']
+    },
     {
       label: t('admin_panel'),
       path: '/admin',
@@ -78,7 +93,7 @@ const Layout = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans rtl overflow-hidden">
+    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-40">
@@ -129,10 +144,6 @@ const Layout = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-800 pb-20 md:pb-4">
-          <button onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'es' : 'en')} className="mb-4 text-xs text-slate-500 hover:text-white w-full text-left">
-            🌐 {i18n.language === 'en' ? 'Cambiar a Español' : 'Switch to English'}
-          </button>
-          
           <button onClick={handleLogout} className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm w-full">
             <LogOut size={16} /> {t('logout')}
           </button>

@@ -1,29 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Truck, Calendar, MapPin, Users, CheckCircle, Clock } from 'lucide-react';
+import { Truck, Calendar, CheckCircle, Clock } from 'lucide-react';
 import SchedulingModal from '../components/SchedulingModal';
 import { API_URL } from '../config/api';
+import NoteModal from '../components/NoteModal';
 
 const InstallationsManager = () => {
   const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState(null); // למודל השיבוץ
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [activeBucket, setActiveBucket] = useState('ready_for_install');
+  const [noteOrderId, setNoteOrderId] = useState(null);
   const user = JSON.parse(localStorage.getItem('userInfo'));
-  const config = { headers: { Authorization: `Bearer ${user.token}` } };
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/orders`, config);
       setOrders(res.data);
       setLoading(false);
     } catch (error) { console.error(error); setLoading(false); }
-  };
+  }, [config]);
 
-  useEffect(() => { fetchOrders(); }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  // פונקציית אישור סופי (סגירת הזמנה)
+  // Legacy (kept for backwards compatibility)
   const handleApprove = async (orderId) => {
     if(!window.confirm(t('approve_close') + '?')) return;
     try {
@@ -32,35 +37,18 @@ const InstallationsManager = () => {
     } catch (error) { alert('Error approving'); }
   };
 
-  // --- הקסם: סינון לסלים (Buckets) ---
-  const readyToSchedule = orders.filter(o => o.status === 'ready_for_install');
-  const scheduled = orders.filter(o => o.status === 'scheduled');
-  const pendingApproval = orders.filter(o => o.status === 'pending_approval');
+  const buckets = useMemo(() => {
+    const ready = orders.filter(o => o.status === 'ready_for_install');
+    const scheduled = orders.filter(o => o.status === 'scheduled');
+    const pendingApproval = orders.filter(o => o.status === 'pending_approval');
+    return { ready, scheduled, pendingApproval };
+  }, [orders]);
 
-  // רכיב כרטיס בודד לשימוש חוזר
-  const OrderCard = ({ order, actionBtn }) => (
-    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm hover:border-blue-500/50 transition mb-3">
-      <div className="flex justify-between items-start mb-2">
-        <h4 className="font-bold text-white text-sm">{order.clientName}</h4>
-        <span className="text-xs font-mono text-slate-500">#{order.orderNumber}</span>
-      </div>
-      <p className="text-xs text-slate-400 flex items-center gap-1 mb-2"><MapPin size={12}/> {order.clientAddress}</p>
-      
-      {/* תצוגת צוות ותאריכים (אם יש) */}
-      {order.installDateStart && (
-        <div className="bg-slate-900/50 p-2 rounded mb-3 text-xs border border-slate-700/50">
-          <p className="text-emerald-400 flex items-center gap-1 mb-1">
-            <Calendar size={12}/> {new Date(order.installDateStart).toLocaleDateString()} - {new Date(order.installDateEnd).toLocaleDateString()}
-          </p>
-          <p className="text-blue-300 flex items-center gap-1">
-            <Users size={12}/> {order.installers?.length || 0} Installers
-          </p>
-        </div>
-      )}
-
-      {actionBtn}
-    </div>
-  );
+  const rows = useMemo(() => {
+    if (activeBucket === 'scheduled') return buckets.scheduled;
+    if (activeBucket === 'pending_approval') return buckets.pendingApproval;
+    return buckets.ready;
+  }, [activeBucket, buckets]);
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col">
@@ -68,62 +56,116 @@ const InstallationsManager = () => {
         <Truck className="text-emerald-500" /> {t('installations_center')}
       </h2>
 
-      {/* Kanban Columns Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
-        
-        {/* Column 1: Ready to Schedule */}
-        <div className="bg-slate-900/50 rounded-2xl border border-slate-800 flex flex-col">
-          <div className="p-4 border-b border-slate-800 bg-slate-900 rounded-t-2xl flex justify-between items-center">
-            <h3 className="font-bold text-slate-300 flex items-center gap-2"><Clock size={18}/> {t('col_ready')}</h3>
-            <span className="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{readyToSchedule.length}</span>
-          </div>
-          <div className="p-3 overflow-y-auto flex-1 custom-scrollbar">
-            {readyToSchedule.map(order => (
-              <OrderCard key={order._id} order={order} 
-                actionBtn={
-                  <button onClick={() => setSelectedOrder(order)} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-xs font-bold mt-2">
-                    {t('schedule_job')}
-                  </button>
-                } 
-              />
-            ))}
-          </div>
-        </div>
+      {/* Bucket switch */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveBucket('ready_for_install')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${
+            activeBucket === 'ready_for_install'
+              ? 'bg-slate-800 text-white border-slate-700'
+              : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
+          }`}
+        >
+          <span className="inline-flex items-center gap-2"><Clock size={16} /> {t('col_ready')} ({buckets.ready.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveBucket('scheduled')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${
+            activeBucket === 'scheduled'
+              ? 'bg-slate-800 text-white border-slate-700'
+              : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
+          }`}
+        >
+          <span className="inline-flex items-center gap-2"><Calendar size={16} /> {t('col_scheduled')} ({buckets.scheduled.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveBucket('pending_approval')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${
+            activeBucket === 'pending_approval'
+              ? 'bg-slate-800 text-white border-slate-700'
+              : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
+          }`}
+        >
+          <span className="inline-flex items-center gap-2"><CheckCircle size={16} /> {t('col_pending_approval')} ({buckets.pendingApproval.length})</span>
+        </button>
+      </div>
 
-        {/* Column 2: Scheduled / In Progress */}
-        <div className="bg-slate-900/50 rounded-2xl border border-slate-800 flex flex-col">
-          <div className="p-4 border-b border-slate-800 bg-slate-900 rounded-t-2xl flex justify-between items-center">
-            <h3 className="font-bold text-blue-300 flex items-center gap-2"><Calendar size={18}/> {t('col_scheduled')}</h3>
-            <span className="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{scheduled.length}</span>
-          </div>
-          <div className="p-3 overflow-y-auto flex-1 custom-scrollbar">
-            {scheduled.map(order => (
-              <OrderCard key={order._id} order={order} 
-                actionBtn={<div className="text-center text-xs text-slate-500 py-1">In Progress</div>} 
-              />
-            ))}
-          </div>
-        </div>
+      {/* Table */}
+      <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl flex-1">
+        <table className="w-full text-left text-sm text-slate-300">
+          <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
+            <tr>
+              <th className="p-4">Order #</th>
+              <th className="p-4">Client</th>
+              <th className="p-4">Work days</th>
+              <th className="p-4">Deposit paid</th>
+              <th className="p-4">Deposit date</th>
+              <th className="p-4">Region</th>
+              <th className="p-4">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800">
+            {loading ? (
+              <tr><td colSpan="7" className="p-8 text-center text-slate-400">Loading...</td></tr>
+            ) : rows.length === 0 ? (
+              <tr><td colSpan="7" className="p-8 text-center text-slate-500">No orders in this stage.</td></tr>
+            ) : (
+              rows.map((order) => {
+                const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
+                const depositPaid = Boolean(order.depositPaid);
+                const depositPaidAt = order.depositPaidAt ? new Date(order.depositPaidAt).toLocaleDateString() : '—';
 
-        {/* Column 3: Pending Approval */}
-        <div className="bg-slate-900/50 rounded-2xl border border-slate-800 flex flex-col">
-          <div className="p-4 border-b border-slate-800 bg-slate-900 rounded-t-2xl flex justify-between items-center">
-            <h3 className="font-bold text-emerald-400 flex items-center gap-2"><CheckCircle size={18}/> {t('col_pending_approval')}</h3>
-            <span className="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{pendingApproval.length}</span>
-          </div>
-          <div className="p-3 overflow-y-auto flex-1 custom-scrollbar">
-            {pendingApproval.map(order => (
-              <OrderCard key={order._id} order={order} 
-                actionBtn={
-                  <button onClick={() => handleApprove(order._id)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-xs font-bold mt-2">
-                    {t('approve_close')}
-                  </button>
-                } 
-              />
-            ))}
-          </div>
-        </div>
+                return (
+                  <tr key={order._id} className="hover:bg-slate-800/30 transition">
+                    <td className="p-4 font-mono text-blue-400">#{displayOrderNumber}</td>
+                    <td className="p-4 font-semibold text-white">{order.clientName}</td>
+                    <td className="p-4">{order.estimatedInstallationDays ?? 1}</td>
+                    <td className="p-4">{depositPaid ? 'Yes' : 'No'}</td>
+                    <td className="p-4">{depositPaid ? depositPaidAt : '—'}</td>
+                    <td className="p-4">{order.region || '—'}</td>
+                    <td className="p-4">
+                      {activeBucket === 'ready_for_install' && (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(order)}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                          >
+                            {t('schedule_job')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNoteOrderId(order._id)}
+                            className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
+                          >
+                            Add note
+                          </button>
+                        </div>
+                      )}
 
+                      {activeBucket === 'pending_approval' && (
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(order._id)}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                        >
+                          {t('approve_close')}
+                        </button>
+                      )}
+
+                      {activeBucket === 'scheduled' && (
+                        <span className="text-slate-500 text-xs">Scheduled</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       {selectedOrder && (
@@ -131,6 +173,15 @@ const InstallationsManager = () => {
           order={selectedOrder} 
           onClose={() => setSelectedOrder(null)} 
           onSuccess={fetchOrders} 
+        />
+      )}
+
+      {noteOrderId && (
+        <NoteModal
+          orderId={noteOrderId}
+          stage="scheduling"
+          onClose={() => setNoteOrderId(null)}
+          onSaved={fetchOrders}
         />
       )}
     </div>

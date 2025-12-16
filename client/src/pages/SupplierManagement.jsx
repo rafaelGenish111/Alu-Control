@@ -40,9 +40,9 @@ const SupplierManagement = () => {
     } catch (error) { alert('Error deleting'); }
   };
 
-  // מונע כניסה למי שאינו סופר אדמין (הגנה גם בצד לקוח)
-  if (user.role !== 'super_admin') {
-    return <div className="text-white p-8">Access Denied. Super Admin only.</div>;
+  // Client-side guard (server also enforces)
+  if (!['super_admin', 'admin'].includes(user?.role)) {
+    return <div className="text-white p-8">Access denied.</div>;
   }
 
   return (

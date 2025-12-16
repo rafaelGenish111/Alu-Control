@@ -1,32 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText } from 'lucide-react';
 import { API_URL } from '../config/api';
+import NoteModal from '../components/NoteModal';
 
 const InstallerApp = () => {
     const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploadingId, setUploadingId] = useState(null);
+    const [range, setRange] = useState('today'); // today | tomorrow | week
+    const [noteOrderId, setNoteOrderId] = useState(null);
 
     const user = JSON.parse(localStorage.getItem('userInfo'));
-    const config = { headers: { Authorization: `Bearer ${user.token}` } };
+    const token = user?.token;
+    const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-    const fetchJobs = async () => {
+    const isAssignedToMe = useCallback((order) => {
+        const installers = Array.isArray(order.installers) ? order.installers : [];
+        return installers.some((inst) => {
+            const id = typeof inst === 'string' ? inst : inst?._id;
+            return String(id) === String(user?._id);
+        });
+    }, [user?._id]);
+
+    const inRange = useCallback((dateStr) => {
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        if (Number.isNaN(d.getTime())) return false;
+
+        const startOfDay = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+        const today = startOfDay(new Date());
+
+        if (range === 'today') {
+            const end = new Date(today);
+            end.setDate(end.getDate() + 1);
+            return d >= today && d < end;
+        }
+        if (range === 'tomorrow') {
+            const start = new Date(today);
+            start.setDate(start.getDate() + 1);
+            const end = new Date(today);
+            end.setDate(end.getDate() + 2);
+            return d >= start && d < end;
+        }
+        // week
+        const end = new Date(today);
+        end.setDate(end.getDate() + 7);
+        return d >= today && d < end;
+    }, [range]);
+
+    const fetchJobs = useCallback(async () => {
         setLoading(true);
         try {
             const res = await axios.get(`${API_URL}/orders`, config);
-            const myJobs = res.data.filter(o => o.status === 'install'); // Or check assigned installers logic
+            const myJobs = res.data
+                .filter((o) => ['scheduled', 'install'].includes(o.status)) // keep legacy
+                .filter(isAssignedToMe)
+                .filter((o) => inRange(o.installDateStart));
             setJobs(myJobs);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching jobs:", error);
             setLoading(false);
         }
-    };
+    }, [config, inRange, isAssignedToMe]);
 
-    useEffect(() => { fetchJobs(); }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
     const handleFileUpload = async (e, orderId) => {
         const file = e.target.files[0];
@@ -44,7 +86,8 @@ const InstallerApp = () => {
             alert(t('file_uploaded'));
             setUploadingId(null);
             fetchJobs();
-        } catch (error) {
+        } catch (e) {
+            console.error(e);
             alert('Upload failed');
             setUploadingId(null);
         }
@@ -55,7 +98,10 @@ const InstallerApp = () => {
         try {
             await axios.put(`${API_URL}/orders/${orderId}/status`, { status: 'pending_approval' }, config); // Move to pending approval
             fetchJobs();
-        } catch (error) { alert('Error'); }
+        } catch (e) {
+            console.error(e);
+            alert('Error');
+        }
     };
 
     return (
@@ -64,6 +110,36 @@ const InstallerApp = () => {
                 <h2 className="text-2xl font-bold text-white">{t('my_tasks')}</h2>
                 <button onClick={fetchJobs} className="bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95">
                     <RefreshCw size={20} />
+                </button>
+            </div>
+
+            <div className="flex gap-2 mb-6">
+                <button
+                    type="button"
+                    onClick={() => setRange('today')}
+                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${
+                        range === 'today' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-900 text-slate-300 border-slate-800'
+                    }`}
+                >
+                    Today
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setRange('tomorrow')}
+                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${
+                        range === 'tomorrow' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-900 text-slate-300 border-slate-800'
+                    }`}
+                >
+                    Tomorrow
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setRange('week')}
+                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${
+                        range === 'week' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-900 text-slate-300 border-slate-800'
+                    }`}
+                >
+                    Next 7 days
                 </button>
             </div>
 
@@ -100,7 +176,7 @@ const InstallerApp = () => {
                                 )}
 
                                 <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl">
-                                    TODAY
+                                    {range.toUpperCase()}
                                 </div>
 
                                 <h3 className="text-xl font-bold text-white mb-1 pr-12">{job.clientName}</h3>
@@ -157,11 +233,28 @@ const InstallerApp = () => {
                                     >
                                         <CheckCircle /> {t('finish_job')}
                                     </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setNoteOrderId(job._id)}
+                                        className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-bold text-sm border border-slate-700"
+                                    >
+                                        Add note
+                                    </button>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
+            )}
+
+            {noteOrderId && (
+                <NoteModal
+                    orderId={noteOrderId}
+                    stage="installation"
+                    onClose={() => setNoteOrderId(null)}
+                    onSaved={fetchJobs}
+                />
             )}
         </div>
     );

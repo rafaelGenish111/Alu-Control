@@ -16,7 +16,7 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
-  // 1. שליפת רשימת העובדים (רק מתקינים)
+  // Load installers list
   useEffect(() => {
     const fetchTeam = async () => {
       try {
@@ -27,7 +27,7 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
     fetchTeam();
   }, []);
 
-  // ניהול בחירת עובדים (Checkbox Logic)
+  // Checkbox selection logic
   const toggleInstaller = (id) => {
     const current = formData.selectedInstallers;
     if (current.includes(id)) {
@@ -72,7 +72,7 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
 
         <div className="p-6 space-y-6">
           
-          {/* תאריכים */}
+          {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-slate-400 block mb-1">{t('start_date')}</label>
@@ -86,7 +86,7 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* בחירת צוות */}
+          {/* Team selection */}
           <div>
             <label className="text-xs text-slate-400 block mb-2">{t('assign_team')}</label>
             <div className="bg-slate-800 border border-slate-600 rounded-xl p-2 max-h-40 overflow-y-auto">
@@ -107,7 +107,7 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* הערות */}
+          {/* Notes */}
           <div>
             <label className="text-xs text-slate-400 block mb-1">{t('install_notes')}</label>
             <textarea className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm" rows="3"

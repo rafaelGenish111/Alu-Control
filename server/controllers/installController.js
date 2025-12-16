@@ -49,9 +49,11 @@ exports.getInstallersList = async (req, res) => {
 exports.approveInstallation = async (req, res) => {
   const { orderId } = req.body;
   try {
+    // Installation is already finished by installer app -> pending_approval.
+    // Keep this endpoint for backwards compatibility with older UIs.
     const order = await Order.findByIdAndUpdate(
-      orderId, 
-      { status: 'completed' },
+      orderId,
+      { status: 'pending_approval' },
       { new: true }
     );
     res.json(order);

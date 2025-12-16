@@ -18,6 +18,8 @@ import CalendarView from './pages/CalendarView';
 import ProductManagement from './pages/ProductManagement';
 import PendingMaterials from './pages/PendingMaterials';
 import PurchasingTracking from './pages/PurchasingTracking';
+import OrderApprovals from './pages/OrderApprovals';
+import CompletedOrders from './pages/CompletedOrders';
 
 // Simple auth guard – checks if a user is logged in
 const ProtectedRoute = ({ children }) => {
@@ -64,6 +66,8 @@ function App() {
           <Route path="calendar" element={<CalendarView />} />
           <Route path="procurement/pending" element={<PendingMaterials />} />
           <Route path="procurement/tracking" element={<PurchasingTracking />} />
+          <Route path="approvals" element={<OrderApprovals />} />
+          <Route path="completed" element={<CompletedOrders />} />
         </Route>
       </Routes>
     </BrowserRouter>

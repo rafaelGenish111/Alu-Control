@@ -78,6 +78,8 @@ const OrderSchema = new mongoose.Schema({
   // --- Finance & Time Estimation ---
   estimatedInstallationDays: { type: Number, default: 1 },
   deposit: { type: Number, default: 0 }, // Down payment
+  depositPaid: { type: Boolean, default: false },
+  depositPaidAt: { type: Date },
 
   // Final Closure Details
   finalInvoice: {
@@ -101,6 +103,14 @@ const OrderSchema = new mongoose.Schema({
   installDateStart: { type: Date },
   installDateEnd: { type: Date },
   installationNotes: { type: String },
+
+  // --- Notes (by stage, by user) ---
+  notes: [{
+    stage: { type: String, default: 'general' },
+    text: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+    createdBy: { type: String }
+  }],
 
   // --- Audit Log ---
   timeline: [{

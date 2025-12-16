@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, MapPin, Phone,Mail, Package, FileText, CheckCircle,
   Loader, Image as ImageIcon, ArrowRight, RotateCcw,
-  FileCheck, UploadCloud, ExternalLink, Lock
+  FileCheck, UploadCloud, ExternalLink, Lock, MessageSquare
 } from 'lucide-react';
 import { API_URL } from '../config/api';
 
@@ -18,8 +18,11 @@ const ClientCard = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingType, setUploadingType] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteStage, setNoteStage] = useState('general');
   const user = JSON.parse(localStorage.getItem('userInfo'));
-  const config = { headers: { Authorization: `Bearer ${user.token}` } };
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
   // --- REVISED PIPELINE: Removed 'measure' ---
   const steps = ['offer', 'production', 'install', 'completed'];
@@ -30,7 +33,7 @@ const ClientCard = () => {
     'install': 'action_finish_install'
   };
 
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/orders/${id}`, config);
       setOrder(res.data);
@@ -39,9 +42,22 @@ const ClientCard = () => {
       console.error(error);
       setLoading(false);
     }
-  };
+  }, [config, id]);
 
-  useEffect(() => { fetchOrder(); }, [id]);
+  useEffect(() => { fetchOrder(); }, [fetchOrder]);
+
+  const addNote = async () => {
+    if (!noteText.trim()) return;
+    try {
+      await axios.post(`${API_URL}/orders/${id}/notes`, { stage: noteStage, text: noteText }, config);
+      setNoteText('');
+      setNoteStage('general');
+      fetchOrder();
+    } catch (e) {
+      console.error(e);
+      alert('Error saving note');
+    }
+  };
 
   const handleFileUpload = async (e, type) => {
     const file = e.target.files[0];
@@ -89,7 +105,8 @@ const ClientCard = () => {
     try {
       await axios.put(`${API_URL}/orders/${id}/status`, { status: nextStatus }, config);
       fetchOrder();
-    } catch (error) {
+    } catch (e) {
+      console.error(e);
       alert(t('status_update_error'));
     } finally {
       setUpdatingStatus(false);
@@ -106,7 +123,10 @@ const ClientCard = () => {
     try {
       await axios.put(`${API_URL}/orders/${id}/status`, { status: prevStatus }, config);
       fetchOrder();
-    } catch (error) { alert(t('status_update_error')); }
+    } catch (e) {
+      console.error(e);
+      alert(t('status_update_error'));
+    }
   };
 
   if (loading) return <div className="text-white p-8">Loading...</div>;
@@ -281,6 +301,70 @@ const ClientCard = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Order Notes */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold flex items-center gap-2 text-lg"><MessageSquare className="text-cyan-400" /> Order notes</h3>
+            </div>
+
+            <div className="space-y-3 mb-5">
+              {(order.notes || []).length === 0 ? (
+                <div className="text-slate-500 text-sm">No notes yet.</div>
+              ) : (
+                (order.notes || []).slice().reverse().map((n, idx) => (
+                  <div key={idx} className="bg-slate-950/30 border border-slate-800 rounded-xl p-4">
+                    <div className="flex justify-between items-center text-xs text-slate-500 mb-2">
+                      <span className="uppercase">{n.stage || 'general'}</span>
+                      <span>{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</span>
+                    </div>
+                    <div className="text-slate-200 text-sm whitespace-pre-wrap">{n.text}</div>
+                    <div className="text-xs text-slate-500 mt-2">by {n.createdBy || 'System'}</div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="md:col-span-1">
+                <label className="text-xs text-slate-400 block mb-1">Stage</label>
+                <select
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm"
+                  value={noteStage}
+                  onChange={(e) => setNoteStage(e.target.value)}
+                >
+                  <option value="general">General</option>
+                  <option value="order">Order</option>
+                  <option value="procurement">Procurement</option>
+                  <option value="production">Production</option>
+                  <option value="scheduling">Scheduling</option>
+                  <option value="installation">Installation</option>
+                  <option value="approval">Approval</option>
+                </select>
+              </div>
+              <div className="md:col-span-3">
+                <label className="text-xs text-slate-400 block mb-1">Add note</label>
+                <textarea
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm"
+                  rows="3"
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Write a note..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={addNote}
+                disabled={!noteText.trim()}
+                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2 rounded-xl font-bold"
+              >
+                Save note
+              </button>
             </div>
           </div>
         </div>

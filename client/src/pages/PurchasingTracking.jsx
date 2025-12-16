@@ -26,7 +26,7 @@ const PurchasingTracking = () => {
             await axios.post(`${API_URL}/orders/procurement/arrive-item`, {
                 orderId, materialId, isArrived: !currentStatus
             }, config);
-            fetchData(); // רענון כדי לראות את ה-V מתעדכן
+            fetchData(); // refresh
         } catch (e) {
             console.error(e);
             alert('Error updating status');

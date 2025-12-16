@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import 'react-big-calendar/lib/css/react-big-calendar.css'; // ייבוא סטיילים בסיסיים
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { API_URL } from '../config/api';
 
 const localizer = momentLocalizer(moment);
@@ -12,44 +12,56 @@ const localizer = momentLocalizer(moment);
 const CalendarView = () => {
     const { t } = useTranslation();
     const [events, setEvents] = useState([]);
+    const [showInstallations, setShowInstallations] = useState(true);
     const user = JSON.parse(localStorage.getItem('userInfo'));
-    const config = { headers: { Authorization: `Bearer ${user.token}` } };
+    const token = user?.token;
+    const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const res = await axios.get(`${API_URL}/orders`, config);
+    const isRestricted = ['installer', 'production'].includes(user?.role);
 
-                // --- לוגיקת סינון חכמה ---
-                let relevantOrders = res.data;
+    const fetchOrders = useCallback(async () => {
+        try {
+            const res = await axios.get(`${API_URL}/orders`, config);
+            let relevantOrders = res.data;
 
-                // אם המשתמש הוא מתקין - הצג רק את ההזמנות שהוא משובץ בהן
-                if (user.role === 'installer') {
-                    relevantOrders = res.data.filter(order =>
-                        order.installers && order.installers.some(inst => inst._id === user._id)
-                    );
-                }
-                // אחרת (מנהלים/שיווק/ייצור) - מציגים הכל (כבר משוייך למשתנה)
+            if (isRestricted) {
+                relevantOrders = res.data.filter((order) => {
+                    const installers = Array.isArray(order.installers) ? order.installers : [];
+                    return installers.some((inst) => {
+                        const id = typeof inst === 'string' ? inst : inst?._id;
+                        return String(id) === String(user?._id);
+                    });
+                });
+            }
 
-                // המרה לפורמט של הלוח שנה
-                const calendarEvents = relevantOrders
-                    .filter(order => order.installDateStart && order.installDateEnd) // רק מה שמשובץ
-                    .map(order => ({
+            const calendarEvents = relevantOrders
+                .filter((order) => order.installDateStart && order.installDateEnd)
+                .map((order) => {
+                    const displayOrderNumber = order.manualOrderNumber || order.orderNumber || '';
+                    return {
                         id: order._id,
-                        title: `${order.clientName} (${order.orderNumber})`, // מה כתוב בקוביה
+                        type: 'installation',
+                        title: `${order.clientName} (${displayOrderNumber})`,
                         start: new Date(order.installDateStart),
                         end: new Date(order.installDateEnd),
-                        resource: order, // שמירת המידע המלא ללחיצה עתידית
-                        allDay: true // התקנות הן בדרך כלל יום שלם
-                    }));
+                        resource: order,
+                        allDay: true
+                    };
+                });
 
-                setEvents(calendarEvents);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-        fetchOrders();
-    }, []);
+            setEvents(calendarEvents);
+        } catch (e) {
+            console.error(e);
+        }
+    }, [config, isRestricted, user?._id]);
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+    const visibleEvents = useMemo(() => {
+        if (!showInstallations) return [];
+        return events;
+    }, [events, showInstallations]);
 
     return (
         <div className="h-[calc(100vh-100px)] flex flex-col">
@@ -57,10 +69,24 @@ const CalendarView = () => {
                 <CalendarIcon className="text-blue-500" /> {t('calendar')}
             </h2>
 
+            {['super_admin', 'admin', 'office'].includes(user?.role) && (
+                <div className="mb-4 flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                        <input
+                            type="checkbox"
+                            checked={showInstallations}
+                            onChange={(e) => setShowInstallations(e.target.checked)}
+                            className="accent-blue-500"
+                        />
+                        Installations
+                    </label>
+                </div>
+            )}
+
             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex-1 text-white">
                 <Calendar
                     localizer={localizer}
-                    events={events}
+                    events={visibleEvents}
                     startAccessor="start"
                     endAccessor="end"
                     style={{ height: '100%' }}
@@ -72,7 +98,7 @@ const CalendarView = () => {
                         week: t('week'),
                         day: t('day')
                     }}
-                    // אופציונלי: לחיצה על אירוע פותחת את ההזמנה
+                    // Click event opens the order
                     onSelectEvent={(event) => window.location.href = `/orders/${event.id}`}
                 />
             </div>

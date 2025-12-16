@@ -8,14 +8,14 @@ const AdminPanel = () => {
   const { t } = useTranslation();
   
   const [users, setUsers] = useState([]);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', role: 'installer', language: 'es' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', role: 'installer', language: 'en' });
   const [message, setMessage] = useState(null);
-  const [showPassword, setShowPassword] = useState(false); // לעין בטופס יצירה
+  const [showPassword, setShowPassword] = useState(false);
 
-  // State לעריכה
-  const [editingUser, setEditingUser] = useState(null); // המשתמש שנערך כרגע
-  const [editForm, setEditForm] = useState({}); // הנתונים בטופס העריכה
-  const [showEditPassword, setShowEditPassword] = useState(false); // לעין בטופס עריכה
+  // Edit state
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${user.token}` } };
@@ -29,41 +29,41 @@ const AdminPanel = () => {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  // יצירת משתמש
+  // Create user
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await axios.post(`${API_URL}/auth/create-user`, formData, config);
       setMessage({ type: 'success', text: 'User created successfully' });
-      setFormData({ name: '', email: '', phone: '', password: '', role: 'installer', language: 'es' });
+      setFormData({ name: '', email: '', phone: '', password: '', role: 'installer', language: 'en' });
       fetchUsers();
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.message || 'Error' });
     }
   };
 
-  // פתיחת מודאל עריכה
+  // Open edit modal
   const openEditModal = (u) => {
     setEditingUser(u);
-    // טוענים את הנתונים הקיימים, אבל סיסמה משאירים ריקה (כי מעדכנים רק אם רוצים)
+    // Load existing values; keep password blank unless updating it
     setEditForm({ 
       name: u.name, 
       email: u.email, 
       phone: u.phone || '', 
       role: u.role, 
       language: u.language,
-      password: '' // ריק כברירת מחדל
+      password: ''
     });
   };
 
-  // שמירת עריכה
+  // Save edit
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
       await axios.put(`${API_URL}/auth/users/${editingUser._id}`, editForm, config);
       alert('User updated successfully!');
-      setEditingUser(null); // סגירת מודאל
-      fetchUsers(); // רענון
+      setEditingUser(null);
+      fetchUsers();
     } catch (error) {
       alert('Error updating user');
     }
@@ -140,10 +140,9 @@ const AdminPanel = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 block mb-1">Lang</label>
+                            <label className="text-xs text-slate-400 block mb-1">Language</label>
                             <select className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white text-sm"
                     value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value })}>
-                                <option value="es">ES</option>
                                 <option value="en">EN</option>
                             </select>
                         </div>
@@ -159,7 +158,7 @@ const AdminPanel = () => {
         <div className="lg:col-span-2">
             <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-lg">
                 <div className="p-5 border-b border-slate-800 bg-slate-800/50 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-white">מצבת כוח אדם ({users.length})</h3>
+                    <h3 className="text-lg font-bold text-white">Team members ({users.length})</h3>
                 </div>
                 
                 <table className="w-full text-left text-sm">

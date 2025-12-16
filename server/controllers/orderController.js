@@ -31,7 +31,7 @@ exports.createOrder = async (req, res) => {
   try {
     const {
       manualOrderNumber, clientName, clientPhone, clientEmail,
-      clientAddress, region, deposit, estimatedInstallationDays,
+      clientAddress, region, deposit, depositPaid, depositPaidAt, estimatedInstallationDays,
       products, materials
     } = req.body;
 
@@ -59,7 +59,10 @@ exports.createOrder = async (req, res) => {
       orderNumber,
       manualOrderNumber,
       clientName, clientPhone, clientEmail, clientAddress, region,
-      deposit, estimatedInstallationDays,
+      deposit,
+      depositPaid: Boolean(depositPaid),
+      depositPaidAt: depositPaidAt ? new Date(depositPaidAt) : null,
+      estimatedInstallationDays,
       products,   // Client items (Window, Door...)
       materials,  // Factory items (Glass, Paint...)
       productionStatus: prodStatus,
@@ -359,4 +362,79 @@ exports.getBatchingList = async (req, res) => {
 exports.markAsOrdered = async (req, res) => {
   // Legacy function, can be deprecated in favor of markMaterialOrdered
   res.json({ message: 'Deprecated' });
+};
+
+// --- FINANCE / APPROVALS ---
+// Update invoice/payment fields; auto-close if complete
+exports.updateFinalInvoice = async (req, res) => {
+  const { isIssued, invoiceNumber, isPaid, amount } = req.body;
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const parsedAmount = amount === '' || amount === null || typeof amount === 'undefined'
+      ? undefined
+      : Number(amount);
+
+    order.finalInvoice = {
+      isIssued: Boolean(isIssued),
+      invoiceNumber: invoiceNumber || '',
+      amount: Number.isFinite(parsedAmount) ? parsedAmount : undefined,
+      isPaid: Boolean(isPaid)
+    };
+
+    order.timeline.push({
+      status: order.status,
+      note: 'Final invoice updated',
+      date: new Date(),
+      user: req.user ? req.user.name : 'System'
+    });
+
+    const canClose = order.finalInvoice.isIssued && order.finalInvoice.isPaid && Number.isFinite(order.finalInvoice.amount);
+    if (canClose && order.status !== 'completed') {
+      order.status = 'completed';
+      order.timeline.push({
+        status: 'completed',
+        note: 'Order completed (invoice issued + paid)',
+        date: new Date(),
+        user: req.user ? req.user.name : 'System'
+      });
+    }
+
+    const saved = await order.save();
+    res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --- ORDER NOTES ---
+exports.addOrderNote = async (req, res) => {
+  const { stage, text } = req.body;
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const noteText = typeof text === 'string' ? text.trim() : '';
+    if (!noteText) return res.status(400).json({ message: 'Note text is required' });
+
+    order.notes.push({
+      stage: stage || 'general',
+      text: noteText,
+      createdAt: new Date(),
+      createdBy: req.user ? req.user.name : 'System'
+    });
+
+    order.timeline.push({
+      status: order.status,
+      note: `Note added (${stage || 'general'})`,
+      date: new Date(),
+      user: req.user ? req.user.name : 'System'
+    });
+
+    const saved = await order.save();
+    res.status(201).json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

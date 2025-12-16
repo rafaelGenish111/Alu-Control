@@ -4,7 +4,7 @@ const { getSuppliers, createSupplier, deleteSupplier } = require('../controllers
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.get('/', protect, getSuppliers);
-router.post('/', protect, authorize('super_admin'), createSupplier); // הגנה: רק סופר אדמין
-router.delete('/:id', protect, authorize('super_admin'), deleteSupplier);
+router.post('/', protect, authorize('super_admin', 'admin'), createSupplier);
+router.delete('/:id', protect, authorize('super_admin', 'admin'), deleteSupplier);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { X, Plus, Trash2, Search, CheckCircle, Package, Hammer, Save, User } from 'lucide-react';
@@ -7,7 +7,8 @@ import { API_URL } from '../config/api';
 const NewOrderModal = ({ onClose, onSuccess }) => {
   const { t } = useTranslation();
   const user = JSON.parse(localStorage.getItem('userInfo'));
-  const config = { headers: { Authorization: `Bearer ${user.token}` } };
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
   // --- FORM STATE ---
   const [formData, setFormData] = useState({
@@ -17,7 +18,9 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
     clientEmail: '',
     clientAddress: '',
     region: '',
-    deposit: 0,
+    depositPaid: false,
+    depositPaidAt: '',
+    deposit: 0, // legacy - kept for backwards compatibility
     estimatedInstallationDays: 1
   });
 
@@ -43,7 +46,7 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
       } catch (e) { console.error(e); }
     };
     fetchSuppliers();
-  }, []);
+  }, [config]);
 
   // --- CLIENT SEARCH (BY NAME) ---
   const handleNameChange = async (e) => {
@@ -180,9 +183,35 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
 
                 {/* Deposit */}
                 <div>
-                    <label className="text-xs text-slate-400 block mb-1">Deposit (Amount)</label>
-                    <input type="number" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                        value={formData.deposit} onChange={e => setFormData({...formData, deposit: e.target.value})} />
+                    <label className="text-xs text-slate-400 block mb-1">Deposit paid</label>
+                    <label className="flex items-center gap-2 text-sm text-slate-200 bg-slate-800 border border-slate-600 rounded-lg p-2">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(formData.depositPaid)}
+                            onChange={(e) => {
+                                const checked = e.target.checked;
+                                setFormData({
+                                    ...formData,
+                                    depositPaid: checked,
+                                    depositPaidAt: checked ? (formData.depositPaidAt || new Date().toISOString().slice(0, 10)) : ''
+                                });
+                            }}
+                            className="accent-emerald-500"
+                        />
+                        <span>Paid</span>
+                    </label>
+                </div>
+
+                {/* Deposit Date */}
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">Deposit date</label>
+                    <input
+                        type="date"
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white disabled:opacity-50"
+                        value={formData.depositPaidAt}
+                        disabled={!formData.depositPaid}
+                        onChange={(e) => setFormData({ ...formData, depositPaidAt: e.target.value })}
+                    />
                 </div>
 
                 {/* Est. Days */}

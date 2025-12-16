@@ -6,7 +6,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const Login = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,11 +22,6 @@ const Login = () => {
 
       // store token
       localStorage.setItem('userInfo', JSON.stringify(res.data));
-
-      // set preferred language
-      if (res.data.language) {
-        i18n.changeLanguage(res.data.language);
-      }
 
       // smart routing: installer goes to installer app, others to dashboard
       if (res.data.role === 'installer') {
@@ -46,21 +41,9 @@ const Login = () => {
     }
   };
 
-  const toggleLang = () => {
-    const newLang = i18n.language === 'en' ? 'es' : 'en';
-    i18n.changeLanguage(newLang);
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="bg-slate-900 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-800">
-
-        {/* Language Toggle */}
-        <div className="flex justify-end mb-4">
-          <button onClick={toggleLang} className="text-slate-400 hover:text-white text-sm font-bold">
-            {i18n.language === 'en' ? '🇪🇸 Español' : '🇺🇸 English'}
-          </button>
-        </div>
 
         <h1 className="text-3xl font-bold text-white mb-2 text-center bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">Glass Dynamic</h1>
         <p className="text-slate-400 text-center mb-8">{t('welcome')}</p>
@@ -81,10 +64,10 @@ const Login = () => {
           <div className="relative">
             <label className="block text-slate-400 text-sm mb-1">{t('password')}</label>
             <input
-              type={showPassword ? "text" : "password"} // שינוי דינמי של הסוג
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition pr-10" // pr-10 כדי לפנות מקום לאייקון
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition pr-10"
               placeholder="••••••••"
             />
             <button
