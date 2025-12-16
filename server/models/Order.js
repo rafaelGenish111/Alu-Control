@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 
 const OrderSchema = new mongoose.Schema({
   // --- General Information ---
+  // Legacy field (older deployments used `orderNumber` and a unique DB index may still exist)
+  // We keep it in sync with `manualOrderNumber` to avoid E11000 on { orderNumber: null }.
+  orderNumber: { type: String, unique: true, sparse: true },
+
   manualOrderNumber: { type: String, required: true, unique: true }, // Identifier from external system
   clientName: { type: String, required: true },
   clientPhone: String,

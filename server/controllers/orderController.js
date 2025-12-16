@@ -35,6 +35,9 @@ exports.createOrder = async (req, res) => {
       products, materials
     } = req.body;
 
+    // Keep legacy `orderNumber` in sync (some DBs have a unique index on it)
+    const orderNumber = manualOrderNumber;
+
     // Check for duplicate manual order number
     const exists = await Order.findOne({ manualOrderNumber });
     if (exists) {
@@ -53,6 +56,7 @@ exports.createOrder = async (req, res) => {
     const initialStatus = materials.length > 0 ? 'materials_pending' : 'production';
 
     const order = new Order({
+      orderNumber,
       manualOrderNumber,
       clientName, clientPhone, clientEmail, clientAddress, region,
       deposit, estimatedInstallationDays,
