@@ -10,6 +10,7 @@ const PurchasingTracking = () => {
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const token = user?.token;
     const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
+    const POLL_MS = 20000;
 
     const fetchData = useCallback(async () => {
         try {
@@ -18,13 +19,25 @@ const PurchasingTracking = () => {
         } catch (error) { console.error(error); }
     }, [config]);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchData();
+        const id = setInterval(() => {
+            fetchData();
+        }, POLL_MS);
+        return () => clearInterval(id);
+    }, [fetchData]);
 
     const toggleArrival = async (orderId, materialId, currentStatus) => {
+        const nextStatus = !currentStatus;
+        const msg = nextStatus
+            ? 'Confirm this item was received?'
+            : 'Mark this item as NOT received?';
+        if (!window.confirm(msg)) return;
+
         try {
             await axios.post(`${API_URL}/orders/procurement/arrive-item`, {
-                orderId, materialId, isArrived: !currentStatus
+                orderId, materialId, isArrived: nextStatus
             }, config);
             fetchData(); // refresh
         } catch (e) {
@@ -35,9 +48,18 @@ const PurchasingTracking = () => {
 
     return (
         <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                <Truck className="text-emerald-500" /> Purchasing & receiving
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                    <Truck className="text-emerald-500" /> Purchasing & receiving
+                </h2>
+                <button
+                    type="button"
+                    onClick={fetchData}
+                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700"
+                >
+                    Refresh
+                </button>
+            </div>
 
             <div className="space-y-4">
                 {suppliers.map(group => (
@@ -89,6 +111,11 @@ const PurchasingTracking = () => {
                                             <div className="text-right text-xs text-slate-500">
                                                 <div className="flex items-center justify-end gap-1"><User size={10} /> {item.orderedBy}</div>
                                                 <div className="flex items-center justify-end gap-1"><Calendar size={10} /> {new Date(item.orderedAt).toLocaleDateString()}</div>
+                                                {item.isArrived && item.arrivedAt && (
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Calendar size={10} /> Received: {new Date(item.arrivedAt).toLocaleDateString()}
+                                                    </div>
+                                                )}
                                             </div>
 
                                         </div>

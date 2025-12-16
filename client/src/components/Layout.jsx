@@ -61,13 +61,19 @@ const Layout = () => {
       roles: ['super_admin', 'admin', 'production']
     },
     {
+      label: 'Scheduling',
+      path: '/installations',
+      icon: <CalendarIcon size={20} />,
+      roles: ['super_admin', 'admin', 'office']
+    },
+    {
       label: t('calendar'),
       path: '/calendar',
       icon: <CalendarIcon size={20} />,
       roles: ['super_admin', 'admin', 'office', 'production', 'installer']
     },
     {
-      label: 'Approvals',
+      label: 'Financial approvals',
       path: '/approvals',
       icon: <CheckCircle size={20} />,
       roles: ['super_admin', 'admin', 'office']

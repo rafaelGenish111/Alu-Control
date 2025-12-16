@@ -5,6 +5,7 @@ import { Truck, Calendar, CheckCircle, Clock } from 'lucide-react';
 import SchedulingModal from '../components/SchedulingModal';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
+import { useNavigate } from 'react-router-dom';
 
 const InstallationsManager = () => {
   const { t } = useTranslation();
@@ -13,9 +14,11 @@ const InstallationsManager = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [activeBucket, setActiveBucket] = useState('ready_for_install');
   const [noteOrderId, setNoteOrderId] = useState(null);
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
   const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
+  const POLL_MS = 20000;
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -25,20 +28,16 @@ const InstallationsManager = () => {
     } catch (error) { console.error(error); setLoading(false); }
   }, [config]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
-
-  // Legacy (kept for backwards compatibility)
-  const handleApprove = async (orderId) => {
-    if (!window.confirm(t('approve_close') + '?')) return;
-    try {
-      await axios.post(`${API_URL}/orders/install/approve`, { orderId }, config);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOrders();
+    const id = setInterval(() => {
       fetchOrders();
-    } catch (e) {
-      console.error(e);
-      alert('Error approving');
-    }
-  };
+    }, POLL_MS);
+    return () => clearInterval(id);
+  }, [fetchOrders]);
+
+  // Approvals are handled in /approvals
 
   const buckets = useMemo(() => {
     const ready = orders.filter(o => o.status === 'ready_for_install');
@@ -55,9 +54,18 @@ const InstallationsManager = () => {
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col">
-      <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-        <Truck className="text-emerald-500" /> {t('installations_center')}
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+          <Truck className="text-emerald-500" /> {t('installations_center')}
+        </h2>
+        <button
+          type="button"
+          onClick={fetchOrders}
+          className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700"
+        >
+          Refresh
+        </button>
+      </div>
 
       {/* Bucket switch */}
       <div className="mb-4 flex flex-wrap gap-2">
@@ -65,8 +73,8 @@ const InstallationsManager = () => {
           type="button"
           onClick={() => setActiveBucket('ready_for_install')}
           className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${activeBucket === 'ready_for_install'
-              ? 'bg-slate-800 text-white border-slate-700'
-              : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
+            ? 'bg-slate-800 text-white border-slate-700'
+            : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
             }`}
         >
           <span className="inline-flex items-center gap-2"><Clock size={16} /> {t('col_ready')} ({buckets.ready.length})</span>
@@ -75,8 +83,8 @@ const InstallationsManager = () => {
           type="button"
           onClick={() => setActiveBucket('scheduled')}
           className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${activeBucket === 'scheduled'
-              ? 'bg-slate-800 text-white border-slate-700'
-              : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
+            ? 'bg-slate-800 text-white border-slate-700'
+            : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
             }`}
         >
           <span className="inline-flex items-center gap-2"><Calendar size={16} /> {t('col_scheduled')} ({buckets.scheduled.length})</span>
@@ -85,8 +93,8 @@ const InstallationsManager = () => {
           type="button"
           onClick={() => setActiveBucket('pending_approval')}
           className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${activeBucket === 'pending_approval'
-              ? 'bg-slate-800 text-white border-slate-700'
-              : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
+            ? 'bg-slate-800 text-white border-slate-700'
+            : 'bg-transparent text-slate-400 border-slate-800 hover:bg-slate-900'
             }`}
         >
           <span className="inline-flex items-center gap-2"><CheckCircle size={16} /> {t('col_pending_approval')} ({buckets.pendingApproval.length})</span>
@@ -149,10 +157,10 @@ const InstallationsManager = () => {
                       {activeBucket === 'pending_approval' && (
                         <button
                           type="button"
-                          onClick={() => handleApprove(order._id)}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                          onClick={() => navigate('/approvals')}
+                          className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
                         >
-                          {t('approve_close')}
+                          Review in approvals
                         </button>
                       )}
 

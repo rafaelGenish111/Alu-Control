@@ -65,7 +65,7 @@ const OrderApprovals = () => {
   return (
     <div className="max-w-6xl mx-auto">
       <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-        <CheckCircle className="text-emerald-500" /> Order approvals
+        <CheckCircle className="text-emerald-500" /> Financial approvals
       </h2>
 
       <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">

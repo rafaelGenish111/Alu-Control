@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, MapPin, Phone, Mail, Package, FileText, CheckCircle,
-  Loader, Image as ImageIcon, ArrowRight, RotateCcw,
-  FileCheck, UploadCloud, ExternalLink, Lock, MessageSquare
+  Loader, Image as ImageIcon,
+  FileCheck, UploadCloud, ExternalLink, MessageSquare
 } from 'lucide-react';
 import { API_URL } from '../config/api';
 
@@ -17,21 +17,11 @@ const ClientCard = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploadingType, setUploadingType] = useState(null);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [noteStage, setNoteStage] = useState('general');
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
   const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
-
-  // --- REVISED PIPELINE: Removed 'measure' ---
-  const steps = ['offer', 'production', 'install', 'completed'];
-
-  // Mapping status to translation keys
-  const nextStepKeys = {
-    'offer': 'action_approve_production', // Direct to production
-    'install': 'action_finish_install'
-  };
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -44,7 +34,10 @@ const ClientCard = () => {
     }
   }, [config, id]);
 
-  useEffect(() => { fetchOrder(); }, [fetchOrder]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOrder();
+  }, [fetchOrder]);
 
   const addNote = async () => {
     if (!noteText.trim()) return;
@@ -85,59 +78,34 @@ const ClientCard = () => {
     }
   };
 
-  // --- Logic to Advance Status ---
-  const advanceStatus = async () => {
-    const currentIdx = steps.indexOf(order.status);
-    if (currentIdx >= steps.length - 1) return;
-
-    // Prevent advancing manually if in 'production'
-    // (Although the button should be disabled, this is a safety check)
-    if (order.status === 'production') {
-      alert("Status cannot be changed manually. Waiting for factory report.");
-      return;
-    }
-
-    const nextStatus = steps[currentIdx + 1];
-
-    if (!window.confirm(`${t('confirm_advance')} "${nextStatus.toUpperCase()}"?`)) return;
-
-    setUpdatingStatus(true);
-    try {
-      await axios.put(`${API_URL}/orders/${id}/status`, { status: nextStatus }, config);
-      fetchOrder();
-    } catch (e) {
-      console.error(e);
-      alert(t('status_update_error'));
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
-
-  const revertStatus = async () => {
-    const currentIdx = steps.indexOf(order.status);
-    if (currentIdx <= 0) return;
-
-    const prevStatus = steps[currentIdx - 1];
-    if (!window.confirm(`${t('confirm_revert')} "${prevStatus}"?`)) return;
-
-    try {
-      await axios.put(`${API_URL}/orders/${id}/status`, { status: prevStatus }, config);
-      fetchOrder();
-    } catch (e) {
-      console.error(e);
-      alert(t('status_update_error'));
-    }
-  };
-
   if (loading) return <div className="text-white p-8">Loading...</div>;
   if (!order) return <div className="text-white p-8">Order not found</div>;
 
   const masterPlan = order.files && order.files.find(f => f.type === 'master_plan');
   const otherFiles = order.files ? order.files.filter(f => f.type !== 'master_plan') : [];
-  const currentStepIndex = steps.indexOf(order.status);
+  const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
 
-  // Logic to determine if the main action button should be disabled
-  const isProductionStep = order.status === 'production';
+  const managementLink = (() => {
+    switch (order.status) {
+      case 'materials_pending':
+        return { label: 'Open pending items', path: '/procurement/pending' };
+      case 'production_pending':
+      case 'in_production':
+      case 'production':
+        return { label: 'Open production', path: '/production' };
+      case 'ready_for_install':
+      case 'scheduled':
+        return { label: 'Open scheduling', path: '/installations' };
+      case 'install':
+        return { label: 'Open calendar', path: '/calendar' };
+      case 'pending_approval':
+        return { label: 'Open approvals', path: '/approvals' };
+      case 'completed':
+        return { label: 'Open completed orders', path: '/completed' };
+      default:
+        return null;
+    }
+  })();
 
   return (
     <div className="max-w-6xl mx-auto text-slate-100 pb-10">
@@ -147,43 +115,18 @@ const ClientCard = () => {
           <ArrowLeft size={20} /> {t('back_to_list')}
         </button>
 
-        {order.status !== 'completed' && (
-          <div className="flex items-center gap-4">
-            {currentStepIndex > 0 && (
-              <button onClick={revertStatus} className="text-slate-500 hover:text-slate-300 text-xs flex items-center gap-1">
-                <RotateCcw size={14} /> {t('revert_correction')}
-              </button>
-            )}
-
-            {/* --- The Intelligent Action Button --- */}
-            <button
-              onClick={advanceStatus}
-              disabled={updatingStatus || isProductionStep} // Disabled in production
-              className={`
-                        px-6 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-                        ${isProductionStep
-                  ? 'bg-slate-700 text-slate-400 border border-slate-600' // Styling for disabled state
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20' // Normal styling
-                }
-                    `}
-            >
-              {updatingStatus ? <Loader className="animate-spin" size={18} /> :
-                isProductionStep ? <Lock size={18} /> : <CheckCircle size={18} /> // Show Lock icon in production
-              }
-
-              {/* Text logic */}
-              {isProductionStep
-                ? t('status_in_production')
-                : (t(nextStepKeys[order.status]) || t('advance_status'))
-              }
-
-              {!isProductionStep && <ArrowRight size={18} />}
-            </button>
-          </div>
+        {managementLink && (
+          <button
+            type="button"
+            onClick={() => navigate(managementLink.path)}
+            className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700"
+          >
+            {managementLink.label}
+          </button>
         )}
       </div>
 
-      {/* Header & Timeline */}
+      {/* Header */}
       <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-xl mb-6 relative overflow-hidden">
         <div className="flex justify-between items-start">
           <div>
@@ -198,32 +141,10 @@ const ClientCard = () => {
             )}
           </div>
           <div className="text-right">
-            <div className="text-2xl font-mono text-slate-500">#{order.orderNumber}</div>
+            <div className="text-2xl font-mono text-slate-500">#{displayOrderNumber}</div>
             <span className={`px-3 py-1 rounded text-sm uppercase font-bold border inline-block mt-2 ${order.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-blue-600/20 text-blue-300 border-blue-500/30'}`}>
               {order.status}
             </span>
-          </div>
-        </div>
-
-        {/* Visual Timeline */}
-        <div className="mt-10 relative">
-          <div className="absolute top-[15px] left-0 w-full h-0.5 bg-slate-700 -z-0"></div>
-          <div className="flex justify-between relative z-10">
-            {steps.map((step, idx) => {
-              const isCompleted = idx <= currentStepIndex;
-              const isCurrent = idx === currentStepIndex;
-              return (
-                <div key={step} className="flex flex-col items-center gap-2 bg-slate-800 px-2 relative">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all 
-                                ${isCompleted ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-700 text-slate-500'}
-                                ${isCurrent ? 'ring-4 ring-blue-500/20 scale-110' : ''}
-                            `}>
-                    {isCompleted ? <CheckCircle size={16} /> : <div className="w-2 h-2 bg-slate-600 rounded-full"></div>}
-                  </div>
-                  <span className={`text-xs font-bold uppercase ${isCompleted ? 'text-blue-400' : 'text-slate-500'}`}>{step}</span>
-                </div>
-              )
-            })}
           </div>
         </div>
       </div>

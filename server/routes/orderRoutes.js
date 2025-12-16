@@ -26,14 +26,6 @@ router.get('/customers/list', protect, getCustomers);
 router.get('/customers/:name/history', protect, getClientHistory);
 router.get('/clients/lookup/:phone', protect, getClientByPhone);
 
-// פעולות לפי מזהה הזמנה
-router.get('/:id', protect, getOrderById);
-router.post('/', protect, authorize('super_admin', 'admin', 'office'), createOrder);
-router.put('/:id/status', protect, updateOrderStatus);
-router.put('/:id/final-invoice', protect, authorize('super_admin', 'admin', 'office'), updateFinalInvoice);
-router.post('/:id/notes', protect, addOrderNote);
-router.put('/:id/files', protect, addOrderFile);
-
 router.get('/procurement/pending', protect, getPendingMaterials); // רשימת המתנה להזמנה
 router.post('/procurement/order-item', protect, authorize('super_admin', 'admin', 'office'), markMaterialOrdered); // ביצוע הזמנה
 router.get('/procurement/tracking', protect, getPurchasingStatus); // דף Purchasing
@@ -48,5 +40,13 @@ router.post('/install/schedule', protect, authorize('super_admin', 'admin', 'off
 
 // 3. Final approval (Manager only)
 router.post('/install/approve', protect, authorize('super_admin', 'admin'), approveInstallation);
+
+// פעולות לפי מזהה הזמנה (must stay after fixed routes)
+router.post('/', protect, authorize('super_admin', 'admin', 'office'), createOrder);
+router.put('/:id/status', protect, updateOrderStatus);
+router.put('/:id/final-invoice', protect, authorize('super_admin', 'admin', 'office'), updateFinalInvoice);
+router.post('/:id/notes', protect, addOrderNote);
+router.put('/:id/files', protect, addOrderFile);
+router.get('/:id', protect, getOrderById);
 
 module.exports = router;

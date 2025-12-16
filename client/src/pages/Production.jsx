@@ -13,6 +13,7 @@ const Production = () => {
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const token = user?.token;
     const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
+    const POLL_MS = 20000;
 
     const fetchProductionOrders = useCallback(async () => {
         try {
@@ -27,8 +28,14 @@ const Production = () => {
         }
     }, [config]);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchProductionOrders(); }, [fetchProductionOrders]);
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchProductionOrders();
+        const id = setInterval(() => {
+            fetchProductionOrders();
+        }, POLL_MS);
+        return () => clearInterval(id);
+    }, [fetchProductionOrders]);
 
     const startProduction = async (orderId) => {
         if (!window.confirm('Start production for this order?')) return;
@@ -62,9 +69,18 @@ const Production = () => {
 
     return (
         <div className="pb-10">
-            <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                <Hammer className="text-amber-500" size={32} /> {t('production_floor')}
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                    <Hammer className="text-amber-500" size={32} /> {t('production_floor')}
+                </h2>
+                <button
+                    type="button"
+                    onClick={fetchProductionOrders}
+                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700"
+                >
+                    Refresh
+                </button>
+            </div>
 
             {loading ? (
                 <div className="text-white">Loading...</div>
