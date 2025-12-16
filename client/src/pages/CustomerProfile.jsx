@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useTranslation } from 'react-i18next';
 import { 
   ArrowLeft, CheckCircle, Clock, Phone, MapPin, 
   Mail, User, Package, Calendar 
@@ -11,7 +10,6 @@ import { API_URL } from '../config/api';
 const CustomerProfile = () => {
   const { name } = useParams(); // Client name from URL
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('userInfo'));

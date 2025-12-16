@@ -41,7 +41,7 @@ const ActiveOrders = () => {
         }
     }, [user, navigate]);
 
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);

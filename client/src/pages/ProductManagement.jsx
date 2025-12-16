@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Package, Plus, Trash2, Tag, Layers } from 'lucide-react';
@@ -15,10 +15,11 @@ const ProductManagement = () => {
         name: '', sku: '', category: '', description: '', supplier: '', dimensions: '', color: ''
     });
     const user = JSON.parse(localStorage.getItem('userInfo'));
-    const config = { headers: { Authorization: `Bearer ${user.token}` } };
+    const token = user?.token;
+    const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
     // Load data
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [prodRes, supRes] = await Promise.all([
                 axios.get(`${API_URL}/products`, config),
@@ -26,10 +27,11 @@ const ProductManagement = () => {
             ]);
             setProducts(prodRes.data);
             setSuppliers(supRes.data);
-        } catch (error) { console.error(error); }
-    };
+        } catch (e) { console.error(e); }
+    }, [config]);
 
-    useEffect(() => { fetchData(); }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { fetchData(); }, [fetchData]);
 
     // Unique categories list (for autocomplete)
     const existingCategories = [...new Set(products.map(p => p.category))];
@@ -42,7 +44,10 @@ const ProductManagement = () => {
             setFormData({ name: '', sku: '', category: '', description: '', supplier: '', dimensions: '', color: '' });
             setIsModalOpen(false);
             fetchData();
-        } catch (error) { alert('Error adding product'); }
+        } catch (e) {
+            console.error(e);
+            alert('Error adding product');
+        }
     };
 
     const handleDelete = async (id) => {
@@ -50,7 +55,10 @@ const ProductManagement = () => {
         try {
             await axios.delete(`${API_URL}/products/${id}`, config);
             fetchData();
-        } catch (error) { alert('Error'); }
+        } catch (e) {
+            console.error(e);
+            alert('Error');
+        }
     };
 
     return (

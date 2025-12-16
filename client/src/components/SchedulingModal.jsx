@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { X, Calendar, User, Save } from 'lucide-react';
@@ -14,7 +14,8 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
     notes: ''
   });
   const user = JSON.parse(localStorage.getItem('userInfo'));
-  const config = { headers: { Authorization: `Bearer ${user.token}` } };
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
   // Load installers list
   useEffect(() => {
@@ -22,10 +23,10 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
       try {
         const res = await axios.get(`${API_URL}/orders/install/team-list`, config);
         setInstallers(res.data);
-      } catch (error) { console.error(error); }
+      } catch (e) { console.error(e); }
     };
     fetchTeam();
-  }, []);
+  }, [config]);
 
   // Checkbox selection logic
   const toggleInstaller = (id) => {
@@ -53,7 +54,8 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
       
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (e) {
+      console.error(e);
       alert('Error scheduling job');
     }
   };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Shield, CheckCircle, AlertCircle, User, Edit2, X, Eye, EyeOff, Save } from 'lucide-react';
@@ -18,16 +18,20 @@ const AdminPanel = () => {
   const [showEditPassword, setShowEditPassword] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('userInfo'));
-  const config = { headers: { Authorization: `Bearer ${user.token}` } };
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/auth/users`, config);
       setUsers(res.data);
-    } catch (error) { console.error("Error fetching users"); }
-  };
+    } catch (e) {
+      console.error(e);
+    }
+  }, [config]);
 
-  useEffect(() => { fetchUsers(); }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   // Create user
   const handleSubmit = async (e) => {
@@ -64,7 +68,8 @@ const AdminPanel = () => {
       alert('User updated successfully!');
       setEditingUser(null);
       fetchUsers();
-    } catch (error) {
+    } catch (e) {
+      console.error(e);
       alert('Error updating user');
     }
   };

@@ -34,7 +34,10 @@ const InstallationsManager = () => {
     try {
       await axios.post(`${API_URL}/orders/install/approve`, { orderId }, config);
       fetchOrders();
-    } catch (error) { alert('Error approving'); }
+    } catch (e) {
+      console.error(e);
+      alert('Error approving');
+    }
   };
 
   const buckets = useMemo(() => {

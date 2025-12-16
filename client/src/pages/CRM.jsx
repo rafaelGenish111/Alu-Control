@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Plus, Package, Clock } from 'lucide-react';
@@ -13,11 +13,12 @@ const CRM = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('userInfo'));
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
   // Fetch orders for the CRM view
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
-      const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const res = await axios.get(`${API_URL}/orders`, config);
       setOrders(res.data);
       setLoading(false);
@@ -25,11 +26,12 @@ const CRM = () => {
       console.error(error);
       setLoading(false);
     }
-  };
+  }, [config]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   // Map visual colors to order status
   const getStatusColor = (status) => {
