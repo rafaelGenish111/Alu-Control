@@ -1,31 +1,47 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
-import 'moment/locale/es';
+// שינוי קריטי: טעינת השפה מהנתיב המלא
+import 'moment/dist/locale/es'; 
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { API_URL } from '../config/api';
 
+// מגדירים את ה-Localizer מחוץ לקומפוננטה
+const localizer = momentLocalizer(moment);
+
 const CalendarView = () => {
     const { t, i18n } = useTranslation();
     const [events, setEvents] = useState([]);
     const [showInstallations, setShowInstallations] = useState(true);
-    const user = JSON.parse(localStorage.getItem('userInfo'));
+    
+    // שליפת המשתמש
+    const user = useMemo(() => {
+        try {
+            return JSON.parse(localStorage.getItem('userInfo'));
+        } catch (e) {
+            return null;
+        }
+    }, []);
+
     const token = user?.token;
     const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-    const lang = (i18n.language || 'en').startsWith('es') ? 'es' : 'en';
-    const localizer = useMemo(() => {
-        // Must be synchronous: moment.locale() doesn't trigger re-render by itself
-        moment.locale(lang);
-        return momentLocalizer(moment);
-    }, [lang]);
+    // זיהוי השפה הנוכחית (es או en)
+    const currentLang = (i18n.language || 'en').startsWith('es') ? 'es' : 'en';
+
+    // עדכון שפת ה-Moment בכל פעם שהשפה משתנה
+    useEffect(() => {
+        console.log('Switching calendar language to:', currentLang);
+        moment.locale(currentLang);
+    }, [currentLang]);
 
     const isRestricted = ['installer', 'production'].includes(user?.role);
 
     const fetchOrders = useCallback(async () => {
+        if (!token) return;
         try {
             const [ordersRes, repairsRes] = await Promise.all([
                 axios.get(`${API_URL}/orders`, config),
@@ -81,15 +97,30 @@ const CalendarView = () => {
         } catch (e) {
             console.error(e);
         }
-    }, [config, isRestricted, user?._id]);
+    }, [config, isRestricted, user?._id, token]);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
     const visibleEvents = useMemo(() => {
         if (!showInstallations) return [];
         return events;
     }, [events, showInstallations]);
+
+    // הגדרת הודעות הכפתורים (תרגום הממשק של היומן)
+    const messages = useMemo(() => ({
+        next: currentLang === 'es' ? 'Siguiente' : 'Next',
+        previous: currentLang === 'es' ? 'Anterior' : 'Back',
+        today: currentLang === 'es' ? 'Hoy' : 'Today',
+        month: currentLang === 'es' ? 'Mes' : 'Month',
+        week: currentLang === 'es' ? 'Semana' : 'Week',
+        day: currentLang === 'es' ? 'Día' : 'Day',
+        agenda: currentLang === 'es' ? 'Agenda' : 'Agenda',
+        date: currentLang === 'es' ? 'Fecha' : 'Date',
+        time: currentLang === 'es' ? 'Hora' : 'Time',
+        event: currentLang === 'es' ? 'Evento' : 'Event',
+        noEventsInRange: currentLang === 'es' ? 'No hay eventos.' : 'No events in this range.',
+        showMore: total => `+${total} ${currentLang === 'es' ? 'más' : 'more'}`
+    }), [currentLang]);
 
     return (
         <div className="h-[calc(100vh-100px)] flex flex-col">
@@ -113,22 +144,14 @@ const CalendarView = () => {
 
             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex-1 text-white">
                 <Calendar
-                    key={lang}
+                    key={currentLang} // מחייב רינדור מחדש כשמשנים שפה
                     localizer={localizer}
                     events={visibleEvents}
-                    culture={lang}
+                    culture={currentLang} // מעביר את השפה ליומן
                     startAccessor="start"
                     endAccessor="end"
                     style={{ height: '100%' }}
-                    messages={{
-                        next: lang === 'es' ? 'Siguiente' : 'Next',
-                        previous: lang === 'es' ? 'Anterior' : 'Previous',
-                        today: lang === 'es' ? 'Hoy' : 'Today',
-                        month: lang === 'es' ? 'Mes' : 'Month',
-                        week: lang === 'es' ? 'Semana' : 'Week',
-                        day: lang === 'es' ? 'Día' : 'Day',
-                        agenda: lang === 'es' ? 'Agenda' : 'Agenda'
-                    }}
+                    messages={messages}
                     eventPropGetter={(event) => {
                         if (event.type === 'repair') {
                             return { style: { backgroundColor: '#92400e', borderColor: '#92400e' } };
