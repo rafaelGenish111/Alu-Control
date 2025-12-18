@@ -2,7 +2,7 @@ const Repair = require('../models/Repair');
 const Order = require('../models/Order');
 
 exports.createRepair = async (req, res) => {
-  const { manualOrderNumber, contactedAt, problem, estimatedWorkDays } = req.body;
+  const { manualOrderNumber, contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote } = req.body;
   const userName = req.user ? req.user.name : 'System';
 
   try {
@@ -30,6 +30,8 @@ exports.createRepair = async (req, res) => {
       region: order.region,
       contactedAt: dt,
       problem: String(problem).trim(),
+      warrantyStatus: warrantyStatus === 'out_of_warranty' ? 'out_of_warranty' : 'in_warranty',
+      paymentNote: typeof paymentNote === 'string' ? paymentNote.trim() : '',
       estimatedWorkDays: Number.isFinite(Number(estimatedWorkDays)) ? Number(estimatedWorkDays) : 1,
       status: 'open',
       notes: [{ text: 'Repair ticket created', createdAt: new Date(), createdBy: userName }]
@@ -79,9 +81,13 @@ exports.updateRepair = async (req, res) => {
     const repair = await Repair.findById(req.params.id);
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
-    const { contactedAt, problem, estimatedWorkDays } = req.body;
+    const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote } = req.body;
 
     if (typeof problem === 'string') repair.problem = problem.trim();
+    if (typeof warrantyStatus === 'string') {
+      repair.warrantyStatus = warrantyStatus === 'out_of_warranty' ? 'out_of_warranty' : 'in_warranty';
+    }
+    if (typeof paymentNote === 'string') repair.paymentNote = paymentNote.trim();
     if (contactedAt) {
       const dt = new Date(contactedAt);
       if (!Number.isNaN(dt.getTime())) repair.contactedAt = dt;

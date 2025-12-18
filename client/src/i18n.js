@@ -1,199 +1,282 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-// Translations configuration for the client
-// client/src/i18n.js
-// ... imports stay the same
-
 const resources = {
-    en: {
-        translation: {
-            "product_management": "Product Management",
-            "add_product": "Add Product",
-            "sku": "SKU",
-            "category": "Category",
-            "dimensions": "Dimensions",
-            "color": "Color",
-            "select_product": "Select Product",
-            "view_master_plan": "View Master Plan (Plans)",
-            "plan_available": "Plans Available",
-            "calendar": "Calendar",
-            "today": "Today",
-            "month": "Month",
-            "week": "Week",
-            "day": "Day",
-            "previous": "Previous",
-            "next": "Next",
-            "view_calendar": "View Calendar",
-            "view_list": "View List",
-            "view_map": "View Map",
-            "view_details": "View Details",
-            "view_photos": "View Photos",
-            "view_videos": "View Videos",
-            "view_documents": "View Documents",
-            "view_notes": "View Notes",
-            "view_schedule": "View Schedule",
-            "view_team": "View Team",
-            "view_suppliers": "Suppliers",
-            "view_clients": "View Clients",
-            "view_orders": "View Orders",
-            "view_installations": "View Installations",
-            "view_production": "View Production",
-            "view_purchasing": "View Purchasing",
-            "view_admin_panel": "View Admin Panel",
-            "view_user_management": "View User Management",
-            "view_supplier_management": "View Supplier Management",
-            "view_installations_center": "View Installations Center",
-            "view_installations_list": "View Installations List",
-            "view_installations_map": "View Installations Map",
-            "view_installations_details": "View Installations Details",
-            "view_installations_photos": "View Installations Photos",
-            "view_installations_videos": "View Installations Videos",
-            "view_installations_documents": "View Installations Documents",
-            "view_installations_notes": "View Installations Notes",
-            "view_installations_schedule": "View Installations Schedule",
-            "view_installations_team": "View Installations Team",
-            "view_installations_suppliers": "View Installations Suppliers",
-            "view_installations_clients": "View Installations Clients",
-            "view_installations_orders": "View Installations Orders",
-            "view_installations_production": "View Installations Production",
-            "view_installations_purchasing": "View Installations Purchasing",
-            "view_installations_admin_panel": "View Installations Admin Panel",
-            "installations_center": "Installations Center",
-            "col_ready": "Ready to Schedule",
-            "col_scheduled": "Scheduled / In Progress",
-            "col_pending_approval": "Completed (Pending Approval)",
-            "schedule_job": "Schedule Job",
-            "approve_close": "Approve and Close",
-            "select_dates": "Select Dates",
-            "start_date": "Start Date",
-            "end_date": "End Date",
-            "assign_team": "Assign Team",
-            "install_notes": "Installation Notes",
-            "save_schedule": "Save Schedule",
-            "team_members": "selected installers",
-            "supplier_management": "Supplier Management",
-            "add_supplier": "Add Supplier",
-            "contact_person": "Contact Person",
-            "lead_time": "Lead Time (Days)",
-            "delete": "Delete",
-            "action_approve_production": "Approve and Send to Production",
-            "status_in_production": "In Production (Waiting Factory)",
-            "action_finish_install": "Finish Installation and Close",
-            "back_to_list": "Back to List",
-            "revert_correction": "Revert Correction",
-            "master_plan": "Master Plan",
-            "master_plan_desc": "Execution Plans and Instructions",
-            "upload_plan": "Upload Plan",
-            "replace_plan": "Replace Plan",
-            "open_plan": "Open Plan",
-            "no_plan": "No master plan uploaded",
-            "files_media": "Files and Media",
-            "files_desc": "Site photos, documents and files",
-            "no_files_yet": "No additional files yet",
-            "upload_doc": "Upload Document / Photo",
-            "plan_updated": "Master plan updated!",
-            "file_uploaded": "File uploaded successfully",
-            "upload_error": "Upload error",
-            "status_update_error": "Error updating status",
-            "confirm_advance": "Are you sure you want to advance to",
-            "confirm_revert": "Are you sure you want to revert to",
+  en: {
+    translation: {
+      // --- General / Layout ---
+      "active_orders": "Active Orders",
+      "new_order": "+ New Order",
+      "create_order": "Create Order",
+      "cancel": "Cancel",
+      "save": "Save",
+      "search": "Search",
+      "dashboard": "Dashboard",
+      "login": "Login",
+      "logout": "Logout",
+      "welcome": "Welcome",
+      "back_to_list": "Back to List",
+      "delete": "Delete",
+      
+      // --- Order Details ---
+      "order_number": "Order No.",
+      "manual_order_number": "Manual Order #",
+      "client_name": "Client Name",
+      "address": "Address",
+      "region": "Region",
+      "phone": "Phone",
+      "email": "Email",
+      "items_count": "Items",
+      "status": "Status",
+      "deposit_amount": "Deposit",
+      "deposit_date": "Deposit Date",
+      "est_work_days": "Est. Work Days",
+      "order_date": "Order Date",
+      "workflow": "Workflow",
+      
+      // --- Statuses ---
+      "status_scheduled": "Scheduled",
+      "status_pending_approval": "Pending Approval",
+      "status_material_pending": "Material Pending",
+      "status_production": "Production",
+      "status_in_production": "In Production",
+      "ready_for_install": "Ready for Installation",
+      
+      // --- Master Plan ---
+      "master_plan": "Master Plan",
+      "upload_master_plan": "Upload Master Plan",
+      "no_master_plan": "No master plan uploaded",
+      "view_master_plan": "View Master Plan",
+      
+      // --- Files & Media ---
+      "files_media": "Files and Media",
+      "upload_doc": "Upload Document / Photo",
+      
+      // --- Products Table (Client) ---
+      "products_for_client": "Products for Client",
+      "type": "Type",
+      "description": "Description",
+      "dimensions": "Dimensions",
+      "quantity": "Qty",
+      
+      // --- Materials Table (Factory) ---
+      "materials_to_order": "Materials to Order",
+      "glass": "Glass",
+      "paint": "Paint",
+      "other": "Other",
+      "select_supplier": "Select Supplier",
+      "supplier": "Supplier",
+      
+      // --- Purchasing & Procurement ---
+      "purchasing_center": "Purchasing Center",
+      "pending_items_page": "Pending Items", 
+      "pending_item_to_order": "Pending Item to Order",
+      "material_type": "Type",
+      "ordered": "Ordered",
+      "purchasing_tracking": "Purchasing & Receiving",
+      "view_suppliers": "View Suppliers",
+      "supplier_management": "Supplier Management",
+      "add_supplier": "Add Supplier",
+      "contact_person": "Contact Person",
 
-            // Dynamic Action Buttons
-            "action_offer": "Approve and pass to Measurement",
-            "action_measure": "Measurement ready -> Send to Prod.",
-            "action_production": "Production ready -> Ready for Installation",
-            "action_install": "Finish Installation and Close",
-            "search": "Search",
-            "search_client_placeholder": "Search by name, phone or address...",
-            "total_orders": "Total Orders",
-            "last_activity": "Last Activity",
-            "active_orders": "Active Orders",
-            "customers": "Customers",
-            "installer_app": "Installer App",
-            "my_tasks": "My Tasks Today",
-            "open_waze": "Navigate (Waze)",
-            "call_client": "Call Client",
-            "view_plans": "View Plans",
-            "upload_proof": "Photo Proof",
-            "finish_job": "Finish Job",
-            "uploading": "Uploading...",
-            "no_installs": "No installations assigned for today",
-            "production_floor": "Production Floor",
-            "ready_for_install": "Ready for Installation",
-            "mark_ready": "Mark as Ready",
-            "material_status": "Material Status",
-            "ordered": "Ordered",
-            "pending": "Pending",
-            "no_production": "No active orders in production",
-            "purchasing_center": "Purchasing Center",
-            "items_pending": "Items Pending",
-            "order_all": "Generate PO (Order All)",
-            "no_pending_items": "No pending items for purchasing",
-            "supplier_group": "Supplier Group",
-            "client": "Client",
-            "new_order": "New Order",
-            "client_name": "Client Name",
-            "address": "Address",
-            "phone": "Phone",
-            "status": "Status",
-            "items": "Items",
-            "add_item": "Add Item",
-            "product": "Product",
-            "description": "Description",
-            "supplier": "Supplier",
-            "save_order": "Create Order",
-            "cancel": "Cancel",
-            "workflow": "Workflow",
-            "order_number": "Order #",
-            "welcome": "Welcome",
-            "login": "Login",
-            "logout": "Logout",
-            "dashboard": "Dashboard",
-            "crm": "Orders & CRM",
-            "production": "Production",
-            "suppliers": "Purchasing",
-            "admin_panel": "User Management",
-            "create_user": "Create New User",
-            "role": "Role",
-            "name": "Name",
-            "email": "Email",
-            "password": "Password",
-            "success": "Action Successful",
-            "error": "Error occurred"
-        }
-    },
-    es: {
-        translation: {
-            "active_orders": "Pedidos activos",
-            "calendar": "Calendario",
-            "production": "Producción",
-            "customers": "Clientes",
-            "supplier_management": "Gestión de proveedores",
-            "installer_app": "App de instaladores",
-            "admin_panel": "Gestión de usuarios",
-            "logout": "Cerrar sesión",
+      // --- Production ---
+      "view_production": "View Production",
+      "production_floor": "Production Floor",
+      "mark_ready": "Mark as Ready",
+      
+      // --- Installation / Calendar ---
+      "calendar": "Calendar",
+      "installations_center": "Installations Center",
+      "view_installations": "View Installations",
+      "schedule_job": "Schedule Job",
+      "start_date": "Start Date",
+      "end_date": "End Date",
+      "assign_team": "Assign Team",
+      "install_notes": "Installation Notes",
+      "save_schedule": "Save Schedule",
+      "installer_app": "Installer App",
+      "my_tasks": "My Tasks Today",
+      "finish_job": "Finish Job",
+      "upload_proof": "Photo Proof",
+      
+      // --- Admin ---
+      "admin_panel": "User Management",
+      "create_user": "Create New User",
+      "role": "Role",
+      "name": "Name",
+      "password": "Password",
+      
+      // --- Messages ---
+      "success": "Action Successful",
+      "error": "Error occurred",
+      "uploading": "Uploading...",
 
-            "view_master_plan": "Ver plano maestro",
-            "my_tasks": "Mis tareas de hoy",
-            "finish_job": "Finalizar trabajo",
-            "upload_proof": "Foto de prueba",
-            "uploading": "Subiendo..."
-        }
+      // --- Calendar Days & Months ---
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
     }
+  },
+  es: {
+    translation: {
+      // --- General / Layout ---
+      "active_orders": "Trabajos en curso", //
+      "new_order": "+ Añadir nuevo",
+      "create_order": "Crear",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "search": "Buscar",
+      "dashboard": "Tablero",
+      "login": "Iniciar sesión",
+      "logout": "Cerrar sesión",
+      "welcome": "Bienvenido",
+      "back_to_list": "Volver a la lista",
+      "delete": "Eliminar",
+      
+      // --- Order Details ---
+      "order_number": "No. presupuesto",
+      "manual_order_number": "Nº de presupuesto", //
+      "client_name": "Cliente",
+      "address": "Dirección",
+      "region": "Localidad", //
+      "phone": "Nº de Teléfono",
+      "email": "Email",
+      "items_count": "Nº artículos",
+      "status": "Estado",
+      "deposit_amount": "Depósito",
+      "deposit_date": "Fecha pago deposito", //
+      "est_work_days": "Días instalación", //
+      "order_date": "Fecha presupuesto", //
+      "workflow": "Flujo de trabajo",
+      
+      // --- Statuses ---
+      "status_scheduled": "Pendiente instalación", //
+      "status_pending_approval": "Pendiente contabilizar", //
+      "status_material_pending": "Pendiente compra", //
+      "status_production": "Pendiente fabricación", //
+      "status_in_production": "En Producción",
+      "ready_for_install": "Listo para instalar",
+      
+      // --- Master Plan ---
+      "master_plan": "Parte trabajo", //
+      "upload_master_plan": "Descargar parte de trabajo", //
+      "no_master_plan": "Parte de trabajo pendiente de subir", //
+      "view_master_plan": "Ver parte de trabajo",
+      
+      // --- Files & Media ---
+      "files_media": "Archivos y medios",
+      "upload_doc": "Subir documento / foto",
+      
+      // --- Products Table (Client) ---
+      "products_for_client": "Productos a instalar", //
+      "type": "Tipo", //
+      "description": "Descripción",
+      "dimensions": "Dimensiones",
+      "quantity": "Cant.",
+      
+      // --- Materials Table (Factory) ---
+      "materials_to_order": "Material a pedir", //
+      "glass": "Cristales", //
+      "paint": "Lacado", //
+      "other": "Otro", //
+      "select_supplier": "Proveedor", //
+      "supplier": "Proveedor",
+      
+      // --- Purchasing & Procurement ---
+      "purchasing_center": "Centro de compras",
+      "pending_items_page": "Compras", //
+      "pending_item_to_order": "Artículos pendientes de pedir", //
+      "material_type": "Material", //
+      "ordered": "Pedido",
+      "purchasing_tracking": "Compras y Recepción",
+      "view_suppliers": "Ver Proveedores",
+      "supplier_management": "Gestión de proveedores",
+      "add_supplier": "Añadir proveedor",
+      "contact_person": "Persona de contacto",
+
+      // --- Production ---
+      "view_production": "Ver Producción",
+      "production_floor": "Piso de producción",
+      "mark_ready": "Marcar como listo",
+
+      // --- Installation / Calendar ---
+      "calendar": "Calendario",
+      "installations_center": "Centro de instalaciones",
+      "view_installations": "Ver Instalaciones",
+      "schedule_job": "Agendar trabajo",
+      "start_date": "Fecha de inicio",
+      "end_date": "Fecha de finalización",
+      "assign_team": "Asignar equipo",
+      "install_notes": "Notas de instalación",
+      "save_schedule": "Guardar horario",
+      "installer_app": "App de instaladores",
+      "my_tasks": "Mis tareas de hoy",
+      "finish_job": "Finalizar trabajo",
+      "upload_proof": "Foto de prueba",
+      
+      // --- Admin ---
+      "admin_panel": "Gestión de usuarios",
+      "create_user": "Crear nuevo usuario",
+      "role": "Rol",
+      "name": "Nombre",
+      "password": "Contraseña",
+      
+      // --- Messages ---
+      "success": "Acción exitosa",
+      "error": "Ocurrió un error",
+      "uploading": "Subiendo...",
+
+      // --- Calendar Days & Months (Added from new image) ---
+      "monday": "Lunes", //
+      "tuesday": "Martes", //
+      "wednesday": "Miércoles", //
+      "thursday": "Jueves", //
+      "friday": "Viernes", //
+      "saturday": "Sábado", //
+      "sunday": "Domingo", //
+      
+      "january": "Enero", //
+      "february": "Febrero", //
+      "march": "Marzo", //
+      "april": "Abril", //
+      "may": "Mayo", //
+      "june": "Junio", //
+      "july": "Julio", //
+      "august": "Agosto", //
+      "september": "Septiembre", //
+      "october": "Octubre", //
+      "november": "Noviembre", //
+      "december": "Diciembre" //
+    }
+  }
 };
 
-
 i18n
-    .use(initReactI18next)
-    .init({
-        resources,
-        lng: localStorage.getItem('lang') || "en",
-        fallbackLng: "en",
-        supportedLngs: ["en", "es"],
-        interpolation: {
-            escapeValue: false
-        }
-    });
+  .use(initReactI18next)
+  .init({
+    resources,
+    lng: "es", 
+    fallbackLng: "en",
+    interpolation: {
+      escapeValue: false
+    }
+  });
 
 export default i18n;

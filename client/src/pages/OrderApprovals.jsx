@@ -162,7 +162,7 @@ const OrderApprovals = () => {
                     onChange={(e) => setForm((p) => ({ ...p, isIssued: e.target.checked }))}
                     className="accent-emerald-500"
                   />
-                  <span className="inline-flex items-center gap-2"><Receipt size={16} /> Invoice issued</span>
+                  <span className="inline-flex items-center gap-2"> Invoice issued</span>
                 </label>
 
                 <div>
@@ -185,7 +185,7 @@ const OrderApprovals = () => {
                     onChange={(e) => setForm((p) => ({ ...p, isPaid: e.target.checked }))}
                     className="accent-emerald-500"
                   />
-                  <span className="inline-flex items-center gap-2"><CreditCard size={16} /> Customer paid</span>
+                  <span className="inline-flex items-center gap-2">Customer paid</span>
                 </label>
 
                 <div>

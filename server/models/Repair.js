@@ -12,6 +12,9 @@ const RepairSchema = new mongoose.Schema({
   contactedAt: { type: Date, required: true },
   problem: { type: String, required: true },
 
+  warrantyStatus: { type: String, enum: ['in_warranty', 'out_of_warranty'], default: 'in_warranty' },
+  paymentNote: { type: String, default: '' },
+
   status: {
     type: String,
     enum: ['open', 'ready_to_schedule', 'scheduled', 'in_progress', 'closed'],

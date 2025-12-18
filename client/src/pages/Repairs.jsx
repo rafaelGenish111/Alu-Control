@@ -10,7 +10,16 @@ const Repairs = () => {
   const [query, setQuery] = useState('');
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ manualOrderNumber: '', contactedAt: '', problem: '', estimatedWorkDays: 1 });
+  const [createForm, setCreateForm] = useState({
+    manualOrderNumber: '',
+    contactedAt: '',
+    problem: '',
+    estimatedWorkDays: 1,
+    warrantyStatus: 'in_warranty',
+    paymentNote: ''
+  });
+  const [createFiles, setCreateFiles] = useState([]);
+  const [creating, setCreating] = useState(false);
 
   const [selected, setSelected] = useState(null);
   const [noteText, setNoteText] = useState('');
@@ -45,18 +54,44 @@ const Repairs = () => {
       return;
     }
     try {
+      setCreating(true);
       const contactedAt = createForm.contactedAt || new Date().toISOString().slice(0, 10);
-      await axios.post(`${API_URL}/repairs`, {
+      const created = await axios.post(`${API_URL}/repairs`, {
         manualOrderNumber: createForm.manualOrderNumber.trim(),
         contactedAt,
         problem: createForm.problem.trim(),
-        estimatedWorkDays: Number(createForm.estimatedWorkDays) || 1
+        estimatedWorkDays: Number(createForm.estimatedWorkDays) || 1,
+        warrantyStatus: createForm.warrantyStatus,
+        paymentNote: createForm.paymentNote
       }, config);
+
+      const repairId = created?.data?._id;
+      if (repairId && Array.isArray(createFiles) && createFiles.length > 0) {
+        for (const file of createFiles) {
+          const fd = new FormData();
+          fd.append('image', file);
+          const uploadRes = await axios.post(`${API_URL}/upload`, fd);
+
+          const isVideo = file.type.startsWith('video/');
+          const isPdf = file.type === 'application/pdf';
+          const mediaType = isVideo ? 'video' : (isPdf ? 'document' : 'photo');
+
+          await axios.post(`${API_URL}/repairs/${repairId}/media`, {
+            url: uploadRes.data.url,
+            type: mediaType,
+            name: file.name
+          }, config);
+        }
+      }
+
       setCreateOpen(false);
-      setCreateForm({ manualOrderNumber: '', contactedAt: '', problem: '', estimatedWorkDays: 1 });
+      setCreateForm({ manualOrderNumber: '', contactedAt: '', problem: '', estimatedWorkDays: 1, warrantyStatus: 'in_warranty', paymentNote: '' });
+      setCreateFiles([]);
+      setCreating(false);
       fetchRepairs();
     } catch (e) {
       console.error(e);
+      setCreating(false);
       alert(e.response?.data?.message || 'Error creating repair');
     }
   };
@@ -106,9 +141,10 @@ const Repairs = () => {
     try {
       const uploadRes = await axios.post(`${API_URL}/upload`, fd);
       const isVideo = file.type.startsWith('video/');
+      const isPdf = file.type === 'application/pdf';
       await axios.post(`${API_URL}/repairs/${selected._id}/media`, {
         url: uploadRes.data.url,
-        type: isVideo ? 'video' : 'photo',
+        type: isVideo ? 'video' : (isPdf ? 'document' : 'photo'),
         name: file.name
       }, config);
       const refreshed = await axios.get(`${API_URL}/repairs/${selected._id}`, config);
@@ -301,6 +337,78 @@ const Repairs = () => {
               </div>
 
               <div>
+                <label className="text-xs text-slate-400 block mb-1">Warranty</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCreateForm((p) => ({ ...p, warrantyStatus: 'in_warranty' }))}
+                    className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition ${createForm.warrantyStatus === 'in_warranty'
+                      ? 'bg-emerald-600/20 text-emerald-200 border-emerald-700'
+                      : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                      }`}
+                  >
+                    In warranty
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateForm((p) => ({ ...p, warrantyStatus: 'out_of_warranty' }))}
+                    className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition ${createForm.warrantyStatus === 'out_of_warranty'
+                      ? 'bg-amber-600/20 text-amber-200 border-amber-700'
+                      : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                      }`}
+                  >
+                    Out of warranty
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Payment note</label>
+                <input
+                  value={createForm.paymentNote}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, paymentNote: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                  placeholder="e.g. Customer pays for replacement glass"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Attachments</label>
+                <label className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-sm font-bold border border-slate-700 inline-flex items-center gap-2 cursor-pointer">
+                  <UploadCloud size={16} /> Add image / document
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length === 0) return;
+                      setCreateFiles((prev) => [...prev, ...files].slice(0, 10));
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {createFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {createFiles.map((f, idx) => (
+                      <div key={`${f.name}-${idx}`} className="flex items-center justify-between bg-slate-950/40 border border-slate-800 rounded-lg px-3 py-2 text-sm">
+                        <span className="text-slate-200 truncate">{f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setCreateFiles((prev) => prev.filter((_, i) => i !== idx))}
+                          className="text-slate-400 hover:text-white"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <div className="text-xs text-slate-500">Files will be uploaded after creating the ticket.</div>
+                  </div>
+                )}
+              </div>
+
+              <div>
                 <label className="text-xs text-slate-400 block mb-1">Problem</label>
                 <textarea
                   value={createForm.problem}
@@ -314,7 +422,14 @@ const Repairs = () => {
 
             <div className="p-5 border-t border-slate-800 flex justify-end gap-3">
               <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 text-slate-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={createRepair} className="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold">Create</button>
+              <button
+                type="button"
+                onClick={createRepair}
+                disabled={creating}
+                className="px-6 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-xl font-bold"
+              >
+                {creating ? 'Creating...' : 'Create'}
+              </button>
             </div>
           </div>
         </div>
@@ -335,6 +450,18 @@ const Repairs = () => {
               <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
                 <div className="text-xs text-slate-400">Problem</div>
                 <div className="text-white font-medium mt-1">{selected.problem}</div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                  <div className="text-xs text-slate-400">Warranty</div>
+                  <div className="text-white font-medium mt-1">
+                    {selected.warrantyStatus === 'out_of_warranty' ? 'Out of warranty' : 'In warranty'}
+                  </div>
+                </div>
+                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                  <div className="text-xs text-slate-400">Payment note</div>
+                  <div className="text-white font-medium mt-1">{selected.paymentNote || '—'}</div>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
