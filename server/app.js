@@ -38,7 +38,7 @@ const corsOptions = {
 
 // הפעלת CORS
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // <--- טיפול קריטי בבקשות Preflight
+app.options(/.*/, cors(corsOptions));
 
 // הגדרות אבטחה נוספות (Helmet)
 app.use(helmet({
