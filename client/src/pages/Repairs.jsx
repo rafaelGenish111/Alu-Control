@@ -1,10 +1,12 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { Wrench, Plus, X, UploadCloud, ExternalLink, AlertTriangle } from 'lucide-react';
 import { API_URL } from '../config/api';
 import RepairSchedulingModal from '../components/RepairSchedulingModal';
 
 const Repairs = () => {
+  const { t } = useTranslation();
   const [repairs, setRepairs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -50,7 +52,7 @@ const Repairs = () => {
 
   const createRepair = async () => {
     if (!createForm.manualOrderNumber.trim() || !createForm.problem.trim()) {
-      alert('Order # and problem are required');
+      alert(`${t('order_col')} and ${t('problem').toLowerCase()} are required`);
       return;
     }
     try {
@@ -92,7 +94,7 @@ const Repairs = () => {
     } catch (e) {
       console.error(e);
       setCreating(false);
-      alert(e.response?.data?.message || 'Error creating repair');
+      alert(e.response?.data?.message || t('error_creating_repair'));
     }
   };
 
@@ -102,18 +104,18 @@ const Repairs = () => {
       fetchRepairs();
     } catch (e) {
       console.error(e);
-      alert('Error approving repair');
+      alert(t('error_approving_repair'));
     }
   };
 
   const close = async (repairId) => {
-    if (!window.confirm('Close this repair ticket?')) return;
+    if (!window.confirm(t('close_repair_ticket'))) return;
     try {
       await axios.post(`${API_URL}/repairs/${repairId}/close`, {}, config);
       fetchRepairs();
     } catch (e) {
       console.error(e);
-      alert('Error closing repair');
+      alert(t('error_closing_repair'));
     }
   };
 
@@ -126,7 +128,7 @@ const Repairs = () => {
       setSelected(refreshed.data);
     } catch (e) {
       console.error(e);
-      alert('Error adding note');
+      alert(t('error') + ': ' + t('notes').toLowerCase());
     }
   };
 
@@ -153,12 +155,12 @@ const Repairs = () => {
     } catch (err) {
       console.error(err);
       setMediaUploading(false);
-      alert('Upload failed');
+      alert(t('error') + ': ' + t('upload').toLowerCase());
     }
   };
 
   const markIssue = async (repair) => {
-    const reason = window.prompt('Issue reason (will be visible in scheduling):', repair?.issue?.reason || '');
+    const reason = window.prompt(t('issue_reason_prompt'), repair?.issue?.reason || '');
     if (reason === null) return;
     try {
       await axios.put(`${API_URL}/repairs/${repair._id}/issue`, { isIssue: true, reason }, config);
@@ -174,7 +176,7 @@ const Repairs = () => {
   };
 
   const resolveIssue = async (repair) => {
-    if (!window.confirm('Resolve this issue?')) return;
+    if (!window.confirm(t('resolve_this_issue'))) return;
     try {
       await axios.put(`${API_URL}/repairs/${repair._id}/issue`, { isIssue: false }, config);
       fetchRepairs();
@@ -192,7 +194,7 @@ const Repairs = () => {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-          <Wrench className="text-amber-500" /> Repairs
+          <Wrench className="text-amber-500" /> {t('repairs')}
         </h2>
 
         <button
@@ -200,7 +202,7 @@ const Repairs = () => {
           onClick={() => setCreateOpen(true)}
           className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-sm font-bold inline-flex items-center gap-2"
         >
-          <Plus size={18} /> New repair ticket
+          <Plus size={18} /> {t('new_repair_ticket')}
         </button>
       </div>
 
@@ -208,7 +210,7 @@ const Repairs = () => {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by order #, client, or problem"
+          placeholder={t('search_by_order_client')}
           className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white placeholder:text-slate-500"
         />
       </div>
@@ -217,19 +219,19 @@ const Repairs = () => {
         <table className="w-full text-left text-sm text-slate-300">
           <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
             <tr>
-              <th className="p-4">Order #</th>
-              <th className="p-4">Client</th>
-              <th className="p-4">Contacted</th>
-              <th className="p-4">Problem</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Action</th>
+              <th className="p-4">{t('order_col')}</th>
+              <th className="p-4">{t('client')}</th>
+              <th className="p-4">{t('contacted')}</th>
+              <th className="p-4">{t('problem')}</th>
+              <th className="p-4">{t('status')}</th>
+              <th className="p-4">{t('action')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
             {loading ? (
-              <tr><td colSpan="6" className="p-8 text-center text-slate-400">Loading...</td></tr>
+              <tr><td colSpan="6" className="p-8 text-center text-slate-400">{t('loading')}</td></tr>
             ) : repairs.length === 0 ? (
-              <tr><td colSpan="6" className="p-8 text-center text-slate-500">No repair tickets.</td></tr>
+              <tr><td colSpan="6" className="p-8 text-center text-slate-500">{t('no_repair_tickets')}</td></tr>
             ) : (
               repairs.map((r) => {
                 const hasIssue = Boolean(r.issue?.isIssue);
@@ -245,10 +247,17 @@ const Repairs = () => {
                     <td className="p-4 truncate max-w-[420px]">{r.problem}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold px-2 py-1 rounded-lg border border-slate-700 bg-slate-800">{String(r.status).toUpperCase()}</span>
+                        <span className="text-xs font-bold px-2 py-1 rounded-lg border border-slate-700 bg-slate-800">
+                          {r.status === 'open' ? t('status_open') :
+                           r.status === 'ready_to_schedule' ? t('status_ready_to_schedule') :
+                           r.status === 'scheduled' ? t('status_repair_scheduled') :
+                           r.status === 'in_progress' ? t('status_in_progress') :
+                           r.status === 'closed' ? t('status_closed') :
+                           String(r.status).toUpperCase()}
+                        </span>
                         {hasIssue && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-900/40 bg-red-900/20 text-red-200">
-                            <AlertTriangle size={12} /> ISSUE
+                            <AlertTriangle size={12} /> {t('issue')}
                           </span>
                         )}
                       </div>
@@ -261,7 +270,7 @@ const Repairs = () => {
                             onClick={(e) => { e.stopPropagation(); approve(r._id); }}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
                           >
-                            Approve to scheduling
+                            {t('approve_to_scheduling')}
                           </button>
                         )}
                         {r.status === 'ready_to_schedule' && (
@@ -270,7 +279,7 @@ const Repairs = () => {
                             onClick={(e) => { e.stopPropagation(); setScheduleRepair(r); }}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
                           >
-                            Schedule
+                            {t('schedule')}
                           </button>
                         )}
                         {r.status !== 'closed' && (
@@ -279,7 +288,7 @@ const Repairs = () => {
                             onClick={(e) => { e.stopPropagation(); close(r._id); }}
                             className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
                           >
-                            Close
+                            {t('close')}
                           </button>
                         )}
                       </div>
@@ -297,15 +306,15 @@ const Repairs = () => {
           <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl">
             <div className="p-5 border-b border-slate-800 flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold text-white">New repair ticket</h3>
-                <p className="text-xs text-slate-400 mt-1">Create a repair ticket by order number.</p>
+                <h3 className="text-lg font-bold text-white">{t('new_repair_ticket')}</h3>
+                <p className="text-xs text-slate-400 mt-1">{t('create_repair_ticket')}</p>
               </div>
               <button type="button" onClick={() => setCreateOpen(false)} className="text-slate-400 hover:text-white"><X /></button>
             </div>
 
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Order #</label>
+                <label className="text-xs text-slate-400 block mb-1">{t('order_col')}</label>
                 <input
                   value={createForm.manualOrderNumber}
                   onChange={(e) => setCreateForm((p) => ({ ...p, manualOrderNumber: e.target.value }))}
@@ -316,7 +325,7 @@ const Repairs = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Contacted date</label>
+                  <label className="text-xs text-slate-400 block mb-1">{t('contacted_date')}</label>
                   <input
                     type="date"
                     value={createForm.contactedAt}
@@ -325,7 +334,7 @@ const Repairs = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Work days</label>
+                  <label className="text-xs text-slate-400 block mb-1">{t('work_days_label')}</label>
                   <input
                     type="number"
                     value={createForm.estimatedWorkDays}
@@ -337,7 +346,7 @@ const Repairs = () => {
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Warranty</label>
+                <label className="text-xs text-slate-400 block mb-1">{t('warranty')}</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -347,7 +356,7 @@ const Repairs = () => {
                       : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
                       }`}
                   >
-                    In warranty
+                    {t('in_warranty')}
                   </button>
                   <button
                     type="button"
@@ -357,13 +366,13 @@ const Repairs = () => {
                       : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
                       }`}
                   >
-                    Out of warranty
+                    {t('out_of_warranty')}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Payment note</label>
+                <label className="text-xs text-slate-400 block mb-1">{t('payment_note')}</label>
                 <input
                   value={createForm.paymentNote}
                   onChange={(e) => setCreateForm((p) => ({ ...p, paymentNote: e.target.value }))}
@@ -373,9 +382,9 @@ const Repairs = () => {
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Attachments</label>
+                <label className="text-xs text-slate-400 block mb-1">{t('attachments')}</label>
                 <label className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-sm font-bold border border-slate-700 inline-flex items-center gap-2 cursor-pointer">
-                  <UploadCloud size={16} /> Add image / document
+                  <UploadCloud size={16} /> {t('add_image_document')}
                   <input
                     type="file"
                     accept="image/*,application/pdf"
@@ -399,36 +408,36 @@ const Repairs = () => {
                           onClick={() => setCreateFiles((prev) => prev.filter((_, i) => i !== idx))}
                           className="text-slate-400 hover:text-white"
                         >
-                          Remove
+                          {t('remove')}
                         </button>
                       </div>
                     ))}
-                    <div className="text-xs text-slate-500">Files will be uploaded after creating the ticket.</div>
+                    <div className="text-xs text-slate-500">{t('files_will_upload')}</div>
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Problem</label>
+                <label className="text-xs text-slate-400 block mb-1">{t('problem')}</label>
                 <textarea
                   value={createForm.problem}
                   onChange={(e) => setCreateForm((p) => ({ ...p, problem: e.target.value }))}
                   className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
                   rows="4"
-                  placeholder="Describe the issue..."
+                  placeholder={t('describe_issue')}
                 />
               </div>
             </div>
 
             <div className="p-5 border-t border-slate-800 flex justify-end gap-3">
-              <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 text-slate-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 text-slate-400 hover:text-white">{t('cancel')}</button>
               <button
                 type="button"
                 onClick={createRepair}
                 disabled={creating}
                 className="px-6 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-xl font-bold"
               >
-                {creating ? 'Creating...' : 'Create'}
+                {creating ? t('creating') : t('create')}
               </button>
             </div>
           </div>
@@ -440,7 +449,7 @@ const Repairs = () => {
           <div className="bg-slate-900 w-full max-w-2xl rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
             <div className="p-5 border-b border-slate-800 flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold text-white">Repair ticket</h3>
+                <h3 className="text-lg font-bold text-white">{t('repair_ticket')}</h3>
                 <p className="text-xs text-slate-400 mt-1">#{selected.manualOrderNumber} · {selected.clientName}</p>
               </div>
               <button type="button" onClick={() => setSelected(null)} className="text-slate-400 hover:text-white"><X /></button>
@@ -448,18 +457,18 @@ const Repairs = () => {
 
             <div className="p-5 space-y-5">
               <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                <div className="text-xs text-slate-400">Problem</div>
+                <div className="text-xs text-slate-400">{t('problem')}</div>
                 <div className="text-white font-medium mt-1">{selected.problem}</div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="text-xs text-slate-400">Warranty</div>
+                  <div className="text-xs text-slate-400">{t('warranty')}</div>
                   <div className="text-white font-medium mt-1">
-                    {selected.warrantyStatus === 'out_of_warranty' ? 'Out of warranty' : 'In warranty'}
+                    {selected.warrantyStatus === 'out_of_warranty' ? t('out_of_warranty') : t('in_warranty')}
                   </div>
                 </div>
                 <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="text-xs text-slate-400">Payment note</div>
+                  <div className="text-xs text-slate-400">{t('payment_note')}</div>
                   <div className="text-white font-medium mt-1">{selected.paymentNote || '—'}</div>
                 </div>
               </div>
@@ -471,7 +480,7 @@ const Repairs = () => {
                     onClick={() => resolveIssue(selected)}
                     className="bg-red-900/30 hover:bg-red-900/40 text-red-100 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-900/40"
                   >
-                    Resolve issue
+                    {t('resolve_issue')}
                   </button>
                 ) : (
                   <button
@@ -479,7 +488,7 @@ const Repairs = () => {
                     onClick={() => markIssue(selected)}
                     className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
                   >
-                    Mark issue
+                    {t('mark_issue')}
                   </button>
                 )}
 
@@ -489,7 +498,7 @@ const Repairs = () => {
                     onClick={() => approve(selected._id)}
                     className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
                   >
-                    Approve to scheduling
+                    {t('approve_to_scheduling')}
                   </button>
                 )}
                 {selected.status === 'ready_to_schedule' && (
@@ -498,7 +507,7 @@ const Repairs = () => {
                     onClick={() => setScheduleRepair(selected)}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
                   >
-                    Schedule
+                    {t('schedule')}
                   </button>
                 )}
                 {selected.status !== 'closed' && (
@@ -507,22 +516,22 @@ const Repairs = () => {
                     onClick={() => close(selected._id)}
                     className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
                   >
-                    Close
+                    {t('close')}
                   </button>
                 )}
               </div>
 
               <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-white font-bold">Media</div>
+                  <div className="text-white font-bold">{t('media')}</div>
                   <label className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 inline-flex items-center gap-2 cursor-pointer">
-                    <UploadCloud size={14} /> {mediaUploading ? 'Uploading...' : 'Upload'}
+                    <UploadCloud size={14} /> {mediaUploading ? t('uploading') : t('upload')}
                     <input type="file" accept="image/*,video/*" className="hidden" onChange={uploadMedia} />
                   </label>
                 </div>
                 <div className="mt-3 space-y-2">
                   {(selected.media || []).length === 0 ? (
-                    <div className="text-sm text-slate-500">No media yet.</div>
+                    <div className="text-sm text-slate-500">{t('no_media_yet')}</div>
                   ) : (
                     selected.media.map((m, idx) => (
                       <a
@@ -533,7 +542,7 @@ const Repairs = () => {
                         className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm"
                       >
                         <span className="text-slate-200 truncate">{m.name || m.type}</span>
-                        <span className="text-slate-400 inline-flex items-center gap-1">Open <ExternalLink size={12} /></span>
+                        <span className="text-slate-400 inline-flex items-center gap-1">{t('open')} <ExternalLink size={12} /></span>
                       </a>
                     ))
                   )}
@@ -541,7 +550,7 @@ const Repairs = () => {
               </div>
 
               <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                <div className="text-white font-bold mb-2">Notes</div>
+                <div className="text-white font-bold mb-2">{t('notes')}</div>
                 <div className="space-y-2">
                   {(selected.notes || []).slice().reverse().map((n, idx) => (
                     <div key={idx} className="text-sm text-slate-300 border border-slate-800 rounded-lg p-3 bg-slate-900">
@@ -549,14 +558,14 @@ const Repairs = () => {
                       <div>{n.text}</div>
                     </div>
                   ))}
-                  {(selected.notes || []).length === 0 && <div className="text-sm text-slate-500">No notes.</div>}
+                  {(selected.notes || []).length === 0 && <div className="text-sm text-slate-500">{t('no_notes')}</div>}
                 </div>
 
                 <div className="mt-3 flex gap-2">
                   <input
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Add note..."
+                    placeholder={t('add_note_placeholder')}
                     className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder:text-slate-500"
                   />
                   <button
@@ -564,7 +573,7 @@ const Repairs = () => {
                     onClick={addNote}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold"
                   >
-                    Add
+                    {t('add')}
                   </button>
                 </div>
               </div>
@@ -588,5 +597,6 @@ const Repairs = () => {
 };
 
 export default Repairs;
+
 
 

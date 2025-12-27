@@ -129,7 +129,7 @@ const InstallationsManager = () => {
           onClick={fetchOrders}
           className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700"
         >
-          Refresh
+          {t('refresh')}
         </button>
       </div>
 
