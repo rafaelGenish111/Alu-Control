@@ -332,6 +332,8 @@ const resources = {
       "error_updating_user": "Error updating user",
 
       // --- Calendar ---
+      "calendar": "Calendar",
+      "installations": "Installations",
       "month": "Month",
       "week": "Week",
       "monday": "Monday",
@@ -685,6 +687,8 @@ const resources = {
       "error_updating_user": "Error al actualizar usuario",
 
       // --- Calendar ---
+      "calendar": "Calendario",
+      "installations": "Instalaciones",
       "month": "Mes",
       "week": "Semana",
       "monday": "Lunes",

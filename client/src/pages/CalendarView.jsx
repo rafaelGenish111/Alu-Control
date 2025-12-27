@@ -154,7 +154,7 @@ const CalendarView = () => {
                             onChange={(e) => setShowInstallations(e.target.checked)}
                             className="accent-blue-500"
                         />
-                        Installations
+                        {t('installations')}
                     </label>
                 </div>
             )}
