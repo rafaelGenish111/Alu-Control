@@ -11,30 +11,36 @@ const repairRoutes = require('./routes/repairRoutes');
 
 const app = express();
 
-// 1. הגדרת משתנה המקור המורשה
+// הגדרת המקור המורשה
 const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-console.log(`🔒 CORS Configured for origin: ${allowedOrigin}`); // לוג לבדיקה
+console.log(`🔒 CORS Configured for origin: ${allowedOrigin}`);
 
-// 2. הגדרת CORS מתקדמת
-app.use(cors({
+// הגדרת אפשרויות CORS
+const corsOptions = {
     origin: (origin, callback) => {
-        // מאפשר בקשות ללא origin (כמו Postman או סקריפטים שרת-לשרת)
-        if (!origin) return callback(null, true);
+        // לוג לכל בקשה כדי שנראה בדיוק מה מגיע
+        if (origin) {
+            console.log(`🔔 Incoming Request from Origin: ${origin}`);
+        }
 
-        // בדיקה האם המקור תואם להגדרות
-        if (origin === allowedOrigin || origin === 'http://localhost:5173') {
-            return callback(null, true);
+        // אישור בקשות ללא Origin (כמו Postman) או בקשות מהמקור המורשה
+        if (!origin || origin === allowedOrigin || origin === 'http://localhost:5173') {
+            callback(null, true);
         } else {
-            console.log(`🚫 Blocked CORS request from: ${origin}`); // לוג חסימה
-            return callback(new Error('Not allowed by CORS'));
+            console.log(`🚫 Blocked Request from: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true, // חובה בשביל Login (Cookies/Headers)
+    credentials: true, // חובה ל-Login
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
 
-// 3. הגדרת Helmet (עם ביטול חסימת Cross-Origin)
+// הפעלת CORS
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // <--- טיפול קריטי בבקשות Preflight
+
+// הגדרות אבטחה נוספות (Helmet)
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
@@ -49,7 +55,6 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/repairs', repairRoutes);
 
-// Basic Route
 app.get('/', (req, res) => {
     res.send('Glass Dynamic API is Running...');
 });
