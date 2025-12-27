@@ -1,7 +1,7 @@
 // server/app.js
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
+// const helmet = require('helmet'); // מנוטרל זמנית לבדיקה
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
@@ -11,41 +11,29 @@ const repairRoutes = require('./routes/repairRoutes');
 
 const app = express();
 
-// הגדרת המקור המורשה
-const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-console.log(`🔒 CORS Configured for origin: ${allowedOrigin}`);
+// 1. מלכודת לוגים - חייבת להיות ראשונה!
+// זה ידפיס לנו בדיוק איזו בקשה מגיעה, עוד לפני שהיא נחסמת
+app.use((req, res, next) => {
+    console.log(`📡 Incoming Request: ${req.method} ${req.url}`);
+    console.log(`   Origin: ${req.headers.origin}`);
+    next();
+});
 
-// הגדרת אפשרויות CORS
-const corsOptions = {
-    origin: (origin, callback) => {
-        // לוג לכל בקשה כדי שנראה בדיוק מה מגיע
-        if (origin) {
-            console.log(`🔔 Incoming Request from Origin: ${origin}`);
-        }
+// 2. הגדרת CORS פשוטה וישירה
+// אנחנו מגדירים את הכתובת הקשיחה כדי למנוע טעויות במשתני סביבה
+const CLIENT_URL = "https://glass-dynamics.vercel.app";
 
-        // אישור בקשות ללא Origin (כמו Postman) או בקשות מהמקור המורשה
-        if (!origin || origin === allowedOrigin || origin === 'http://localhost:5173') {
-            callback(null, true);
-        } else {
-            console.log(`🚫 Blocked Request from: ${origin}`);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+app.use(cors({
+    origin: CLIENT_URL,
     credentials: true, // חובה ל-Login
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-};
-
-// הפעלת CORS
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-
-// הגדרות אבטחה נוספות (Helmet)
-app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-app.use(express.json());
+// טיפול ב-Preflight עם התיקון ל-Express 5
+app.options(/.*/, cors({ origin: CLIENT_URL, credentials: true }));
+
+app.use(express.json()); 
 
 // Routes
 app.use('/api/auth', authRoutes);
