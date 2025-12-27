@@ -13,7 +13,10 @@ const app = express();
 
 // Middleware
 app.use(express.json()); 
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' })); // שיפור קטן: אפשרות לקנפג דרך .env
+app.use(cors({
+    origin: process.env.CORS_ORIGIN, // חייב להיות הכתובת המדויקת, בלי '*'
+    credentials: true // <-- זו השורה שחסרה לך בשביל Login
+}));
 app.use(helmet()); 
 
 // Routes
