@@ -1,50 +1,42 @@
 // server/app.js
 const express = require('express');
 const cors = require('cors');
-// const helmet = require('helmet'); // מנוטרל זמנית לבדיקה
-const authRoutes = require('./routes/authRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const supplierRoutes = require('./routes/supplierRoutes');
-const productRoutes = require('./routes/productRoutes');
-const repairRoutes = require('./routes/repairRoutes');
+
+// הערנו את כל הראוטים כדי לבודד שגיאות בקבצים האלו
+// const authRoutes = require('./routes/authRoutes');
+// const orderRoutes = require('./routes/orderRoutes');
+// const uploadRoutes = require('./routes/uploadRoutes');
+// const supplierRoutes = require('./routes/supplierRoutes');
+// const productRoutes = require('./routes/productRoutes');
+// const repairRoutes = require('./routes/repairRoutes');
 
 const app = express();
 
-// 1. מלכודת לוגים - חייבת להיות ראשונה!
-// זה ידפיס לנו בדיוק איזו בקשה מגיעה, עוד לפני שהיא נחסמת
+// לוג בסיסי כדי שנראה שהשרת חי
 app.use((req, res, next) => {
-    console.log(`📡 Incoming Request: ${req.method} ${req.url}`);
-    console.log(`   Origin: ${req.headers.origin}`);
+    console.log(`📡 Request: ${req.method} ${req.url}`);
     next();
 });
 
-// 2. הגדרת CORS פשוטה וישירה
-// אנחנו מגדירים את הכתובת הקשיחה כדי למנוע טעויות במשתני סביבה
-const CLIENT_URL = "https://glass-dynamics.vercel.app";
-
+// CORS הכי פשוט שיש - פתוח לכולם זמנית לבדיקה
 app.use(cors({
-    origin: CLIENT_URL,
-    credentials: true, // חובה ל-Login
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: '*', 
+    credentials: true
 }));
-
-// טיפול ב-Preflight עם התיקון ל-Express 5
-app.options(/.*/, cors({ origin: CLIENT_URL, credentials: true }));
 
 app.use(express.json()); 
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/suppliers', supplierRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/repairs', repairRoutes);
-
+// ראוט בדיקה פשוט
 app.get('/', (req, res) => {
-    res.send('Glass Dynamic API is Running...');
+    res.status(200).send('✅ Server is SAFE and RUNNING!');
 });
+
+// הערנו את השימוש בראוטים
+// app.use('/api/auth', authRoutes);
+// app.use('/api/orders', orderRoutes);
+// app.use('/api/upload', uploadRoutes);
+// app.use('/api/suppliers', supplierRoutes);
+// app.use('/api/products', productRoutes);
+// app.use('/api/repairs', repairRoutes);
 
 module.exports = app;
