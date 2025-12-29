@@ -38,7 +38,7 @@ describe('Basic System Check', () => {
     it('GET / should return 200 and welcome message', async () => {
         const res = await request(app).get('/');
         expect(res.statusCode).toEqual(200);
-        expect(res.text).toContain('Glass Dynamic API is Running');
+        expect(res.text).toContain('Glass Dynamic API is LIVE and READY');
     });
 
     // בדיקת 404 - נתיב לא קיים
