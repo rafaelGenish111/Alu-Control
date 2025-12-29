@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Shield, CheckCircle, AlertCircle, User, Edit2, X, Eye, EyeOff, Save } from 'lucide-react';
+import { Shield, CheckCircle, AlertCircle, User, Edit2, X, Eye, EyeOff, Save, Trash2 } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const AdminPanel = () => {
@@ -16,6 +16,9 @@ const AdminPanel = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [editForm, setEditForm] = useState({});
     const [showEditPassword, setShowEditPassword] = useState(false);
+    
+    // Delete state
+    const [deletingUser, setDeletingUser] = useState(null);
 
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const token = user?.token;
@@ -71,6 +74,20 @@ const AdminPanel = () => {
         } catch (e) {
             console.error(e);
             alert('Error updating user');
+        }
+    };
+
+    // Delete user
+    const handleDelete = async () => {
+        if (!deletingUser) return;
+        try {
+            await axios.delete(`${API_URL}/auth/users/${deletingUser._id}`, config);
+            alert('User deleted successfully!');
+            setDeletingUser(null);
+            fetchUsers();
+        } catch (e) {
+            console.error(e);
+            alert(e.response?.data?.message || 'Error deleting user');
         }
     };
 
@@ -149,6 +166,7 @@ const AdminPanel = () => {
                                     <select className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white text-sm"
                                         value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value })}>
                                         <option value="en">EN</option>
+                                        <option value="es">ES</option>
                                     </select>
                                 </div>
                             </div>
@@ -172,7 +190,7 @@ const AdminPanel = () => {
                                     <th className="p-4">{t('name')}</th>
                                     <th className="p-4">{t('email')} / {t('phone')}</th>
                                     <th className="p-4">{t('user_role')}</th>
-                                    <th className="p-4 w-10">{t('edit')}</th>
+                                    <th className="p-4 w-20">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800 text-slate-300">
@@ -193,10 +211,15 @@ const AdminPanel = () => {
                                                 {t(`role_${u.role}`) || u.role.replace('_', ' ')}
                                             </span>
                                         </td>
-                                        <td className="p-4 text-right">
-                                            <button onClick={() => openEditModal(u)} className="bg-slate-800 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition border border-slate-700">
-                                                <Edit2 size={16} />
-                                            </button>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2 justify-end">
+                                                <button onClick={() => openEditModal(u)} className="bg-slate-800 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition border border-slate-700">
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button onClick={() => setDeletingUser(u)} className="bg-slate-800 p-2 rounded-lg hover:bg-red-600 hover:text-white transition border border-slate-700">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -278,6 +301,44 @@ const AdminPanel = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* --- DELETE USER MODAL --- */}
+            {deletingUser && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-700 shadow-2xl p-6">
+                        <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+                            <h3 className="text-xl font-bold text-white">Delete User</h3>
+                            <button onClick={() => setDeletingUser(null)} className="text-slate-400 hover:text-white">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="mb-6">
+                            <p className="text-slate-300 mb-4">
+                                Are you sure you want to delete the user <span className="font-bold text-white">{deletingUser.name}</span>?
+                            </p>
+                            <p className="text-sm text-slate-400">
+                                This action cannot be undone.
+                            </p>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setDeletingUser(null)}
+                                className="px-6 py-2 text-slate-400 hover:text-white"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold"
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

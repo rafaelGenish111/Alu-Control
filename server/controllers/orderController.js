@@ -125,6 +125,33 @@ exports.updateProduction = async (req, res) => {
   }
 };
 
+// --- UPDATE PRODUCTS FOR CLIENT ---
+exports.updateProducts = async (req, res) => {
+  const { products } = req.body;
+  const userName = req.user ? req.user.name : 'System';
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (Array.isArray(products)) {
+      order.products = products;
+    }
+
+    order.timeline.push({
+      status: order.status,
+      note: 'Products for Client updated',
+      date: new Date(),
+      user: userName
+    });
+
+    const saved = await order.save();
+    res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.updateInstallTakeList = async (req, res) => {
   const { installTakeList } = req.body;
   const userName = req.user ? req.user.name : 'System';

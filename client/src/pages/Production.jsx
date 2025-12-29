@@ -56,7 +56,7 @@ const Production = () => {
     const getChecklistValue = (order, key, relevant) => {
         const v = order?.productionChecklist?.[key];
         if (typeof v === 'boolean') return v;
-        // Auto-Done if not relevant
+        // Default to not done (false) if relevant, or done (true) if not relevant
         return relevant ? false : true;
     };
 

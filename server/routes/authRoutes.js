@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { loginUser, createUser, getAllUsers, updateUser } = require('../controllers/authController');
+const { loginUser, createUser, getAllUsers, updateUser, deleteUser } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Login – publicly accessible
@@ -16,4 +16,8 @@ router.get('/users', protect, authorize('super_admin', 'admin'), getAllUsers);
 
 // Admin-only endpoint to update a user (wired in router)   
 router.put('/users/:id', protect, authorize('super_admin', 'admin'), updateUser);
+
+// Admin-only endpoint to delete a user (wired in router)
+router.delete('/users/:id', protect, authorize('super_admin', 'admin'), deleteUser);
+
 module.exports = router;

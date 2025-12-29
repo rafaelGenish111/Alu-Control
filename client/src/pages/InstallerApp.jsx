@@ -1,13 +1,15 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText, ClipboardList, X, Save } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText, ClipboardList, X, Save, Menu, Calendar, User } from 'lucide-react';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
 import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const InstallerApp = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploadingId, setUploadingId] = useState(null);
@@ -17,6 +19,8 @@ const InstallerApp = () => {
     const [takeListJob, setTakeListJob] = useState(null);
     const [takeListDraft, setTakeListDraft] = useState([]);
     const [savingTakeList, setSavingTakeList] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showProfile, setShowProfile] = useState(false);
 
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const token = user?.token;
@@ -166,13 +170,101 @@ const InstallerApp = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 p-4 pb-20">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">{t('my_tasks')}</h2>
-                <button onClick={fetchJobs} className="bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95">
-                    <RefreshCw size={20} />
-                </button>
+        <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
+            {/* Header with Logo and Hamburger Menu */}
+            <div className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between mb-4">
+                <img src="/logo.jpg" alt="Dynamica" className="h-10 object-contain" />
+                <div className="flex items-center gap-2">
+                    <button onClick={fetchJobs} className="bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95">
+                        <RefreshCw size={20} />
+                    </button>
+                    <button 
+                        onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                        className="bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95"
+                    >
+                        <Menu size={20} />
+                    </button>
+                </div>
             </div>
+
+            {/* Hamburger Menu Dropdown */}
+            {isMenuOpen && (
+                <div className="fixed top-16 right-4 z-50 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-2 min-w-[200px]">
+                    <button
+                        onClick={() => {
+                            navigate('/calendar');
+                            setIsMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-white transition"
+                    >
+                        <Calendar size={20} />
+                        <span>{t('sidebar_calendar')}</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setShowProfile(true);
+                            setIsMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-white transition"
+                    >
+                        <User size={20} />
+                        <span>Profile</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Profile Modal */}
+            {showProfile && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-700 shadow-2xl p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-white">Profile</h3>
+                            <button onClick={() => setShowProfile(false)} className="text-slate-400 hover:text-white">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-1">Name</label>
+                                <div className="text-white font-medium">{user?.name || '-'}</div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-1">Email</label>
+                                <div className="text-white font-medium">{user?.email || '-'}</div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-1">Phone</label>
+                                <div className="text-white font-medium">{user?.phone || '-'}</div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-1">Role</label>
+                                <div className="text-white font-medium">{user?.role || '-'}</div>
+                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setShowProfile(false)}
+                                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Close menu when clicking outside */}
+            {isMenuOpen && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsMenuOpen(false)}
+                ></div>
+            )}
+
+            <div className="p-4">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white">{t('my_tasks')}</h2>
+                </div>
 
             <div className="flex gap-2 mb-6">
                 <button
@@ -386,6 +478,7 @@ const InstallerApp = () => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };

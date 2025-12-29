@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, MapPin, Phone, Mail, Package, FileText, CheckCircle,
   Loader, Image as ImageIcon,
-  FileCheck, UploadCloud, ExternalLink, MessageSquare, ClipboardList, Plus, Trash2, Save
+  FileCheck, UploadCloud, ExternalLink, MessageSquare, ClipboardList, Plus, Trash2, Save, Edit2
 } from 'lucide-react';
 import { API_URL } from '../config/api';
 
@@ -22,6 +22,9 @@ const ClientCard = () => {
   const [takeListDraft, setTakeListDraft] = useState([]);
   const [newTakeItem, setNewTakeItem] = useState('');
   const [savingTakeList, setSavingTakeList] = useState(false);
+  const [editingProducts, setEditingProducts] = useState(false);
+  const [productsDraft, setProductsDraft] = useState([]);
+  const [savingProducts, setSavingProducts] = useState(false);
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
   const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -54,6 +57,13 @@ const ClientCard = () => {
     setTakeListDraft([]);
   }, [order]);
 
+  useEffect(() => {
+    if (!order) return;
+    const existing = Array.isArray(order.products) ? order.products : [];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setProductsDraft(existing);
+  }, [order]);
+
   const addNote = async () => {
     if (!noteText.trim()) return;
     try {
@@ -77,6 +87,20 @@ const ClientCard = () => {
       console.error(e);
       setSavingTakeList(false);
       alert('Error saving installation checklist');
+    }
+  };
+
+  const saveProducts = async () => {
+    setSavingProducts(true);
+    try {
+      await axios.put(`${API_URL}/orders/${id}/products`, { products: productsDraft }, config);
+      setSavingProducts(false);
+      setEditingProducts(false);
+      fetchOrder();
+    } catch (e) {
+      console.error(e);
+      setSavingProducts(false);
+      alert('Error saving products');
     }
   };
 
@@ -220,7 +244,139 @@ const ClientCard = () => {
             )}
           </div>
 
-          {/* Items Table */}
+          {/* Products for Client Table */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold flex items-center gap-2 text-lg"><Package className="text-blue-400" /> {t('new_products_title')}</h3>
+              {!editingProducts ? (
+                <button
+                  onClick={() => setEditingProducts(true)}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                >
+                  <Edit2 size={16} /> Edit
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingProducts(false);
+                      const existing = Array.isArray(order.products) ? order.products : [];
+                      setProductsDraft(existing);
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveProducts}
+                    disabled={savingProducts}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                  >
+                    <Save size={16} /> {savingProducts ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-slate-300">
+                <thead className="text-xs uppercase bg-slate-800/50 text-slate-400">
+                  <tr>
+                    <th className="p-3">{t('new_col_type')}</th>
+                    <th className="p-3">{t('new_col_desc')}</th>
+                    <th className="p-3">Quantity</th>
+                    {editingProducts && <th className="p-3">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {productsDraft.length === 0 ? (
+                    <tr>
+                      <td colSpan={editingProducts ? 4 : 3} className="p-4 text-center text-slate-500">No products</td>
+                    </tr>
+                  ) : (
+                    productsDraft.map((product, i) => (
+                      <tr key={i}>
+                        <td className="p-3">
+                          {editingProducts ? (
+                            <input
+                              type="text"
+                              value={product.type || ''}
+                              onChange={(e) => {
+                                const updated = [...productsDraft];
+                                updated[i] = { ...updated[i], type: e.target.value };
+                                setProductsDraft(updated);
+                              }}
+                              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                            />
+                          ) : (
+                            <span className="font-medium text-white">{product.type || '-'}</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {editingProducts ? (
+                            <input
+                              type="text"
+                              value={product.description || ''}
+                              onChange={(e) => {
+                                const updated = [...productsDraft];
+                                updated[i] = { ...updated[i], description: e.target.value };
+                                setProductsDraft(updated);
+                              }}
+                              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                            />
+                          ) : (
+                            <span>{product.description || '-'}</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {editingProducts ? (
+                            <input
+                              type="number"
+                              value={product.quantity || 1}
+                              onChange={(e) => {
+                                const updated = [...productsDraft];
+                                updated[i] = { ...updated[i], quantity: parseInt(e.target.value) || 1 };
+                                setProductsDraft(updated);
+                              }}
+                              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                              min="1"
+                            />
+                          ) : (
+                            <span>{product.quantity || 1}</span>
+                          )}
+                        </td>
+                        {editingProducts && (
+                          <td className="p-3">
+                            <button
+                              onClick={() => {
+                                setProductsDraft(productsDraft.filter((_, idx) => idx !== i));
+                              }}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              {editingProducts && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      setProductsDraft([...productsDraft, { type: '', description: '', quantity: 1 }]);
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                  >
+                    <Plus size={16} /> Add Product
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Items Table (Materials) */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
             <h3 className="font-bold mb-6 flex items-center gap-2 text-lg"><Package className="text-blue-400" /> {t('items')}</h3>
             <div className="overflow-x-auto">
