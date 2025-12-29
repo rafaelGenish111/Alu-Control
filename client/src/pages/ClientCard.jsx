@@ -8,6 +8,7 @@ import {
   FileCheck, UploadCloud, ExternalLink, MessageSquare, ClipboardList, Plus, Trash2, Save, Edit2
 } from 'lucide-react';
 import { API_URL } from '../config/api';
+import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const ClientCard = () => {
   const { id } = useParams();
@@ -25,6 +26,7 @@ const ClientCard = () => {
   const [editingProducts, setEditingProducts] = useState(false);
   const [productsDraft, setProductsDraft] = useState([]);
   const [savingProducts, setSavingProducts] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
   const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -233,9 +235,12 @@ const ClientCard = () => {
                     <p className="text-slate-400 text-xs">{new Date(masterPlan.uploadedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <a href={masterPlan.url} target="_blank" rel="noreferrer" className="bg-white text-indigo-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition">
+                <button
+                  onClick={() => setPreviewUrl(masterPlan.url)}
+                  className="bg-white text-indigo-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition"
+                >
                   {t('open_plan')}
-                </a>
+                </button>
               </div>
             ) : (
               <div className="mt-6 border-2 border-dashed border-indigo-500/30 rounded-xl h-20 flex items-center justify-center text-indigo-300/50 text-sm">
@@ -584,6 +589,14 @@ const ClientCard = () => {
         </div>
 
       </div>
+
+      {previewUrl && (
+        <MasterPlanPreviewModal
+          url={previewUrl}
+          title={t('master_plan')}
+          onClose={() => setPreviewUrl('')}
+        />
+      )}
     </div>
   );
 };
