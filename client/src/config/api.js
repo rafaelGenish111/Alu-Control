@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// קביעת כתובת ה-API בהתאם לסביבה (פיתוח/ייצור)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// התיקון: הוספתי export לפני ה-const כדי שקבצים אחרים יוכלו להשתמש בזה
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -39,7 +39,7 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         
-        // 2. הפניה "קשה" לדף הלוגין (Reload כדי לנקות את הסטייט של React)
+        // 2. הפניה "קשה" לדף הלוגין
         window.location.href = '/login';
       }
     }
