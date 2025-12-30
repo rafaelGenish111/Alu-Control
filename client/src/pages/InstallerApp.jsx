@@ -179,7 +179,7 @@ const InstallerApp = () => {
         <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
             {/* Header with Logo and Hamburger Menu */}
             <div className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between mb-4">
-                <img src="/icon.png" alt="Dynamica" className="h-10 object-contain" />
+                <img src="/logo.jpg" alt="Dynamica" className="h-14 object-contain" />
                 <div className="flex items-center gap-2">
                     <button onClick={fetchJobs} className="bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95">
                         <RefreshCw size={20} />

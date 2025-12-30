@@ -1,173 +1,125 @@
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, FileText, Loader } from 'lucide-react';
-
-const isImageUrl = (url) => {
-  if (!url) return false;
-  // Check for image extensions in URL
-  if (/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i.test(url)) return true;
-  // Check if it's a Cloudinary image URL
-  if (/cloudinary\.com.*\/image\/upload/i.test(url)) return true;
-  // Check if it's a Cloudinary URL with image format
-  if (/cloudinary\.com.*\/v\d+\/.*\.(png|jpe?g|webp|gif)/i.test(url)) return true;
-  // Check if it's a Cloudinary URL (most Cloudinary URLs are images by default)
-  if (/cloudinary\.com/i.test(url) && !/\.pdf/i.test(url)) return true;
-  return false;
-};
-
-const isPdfUrl = (url) => {
-  if (!url) return false;
-  // Check for PDF extension in URL
-  if (/\.(pdf)(\?|#|$)/i.test(url)) return true;
-  // Check if it's a Cloudinary PDF URL (raw upload)
-  if (/cloudinary\.com.*\/raw\/upload/i.test(url)) return true;
-  // Check if URL contains pdf in path
-  if (/cloudinary\.com.*\/.*\.pdf/i.test(url)) return true;
-  // Check if it's a Cloudinary URL with format=pdf
-  if (/cloudinary\.com.*[\/_]pdf/i.test(url)) return true;
-  // If it's Cloudinary and not an image URL, assume it might be PDF
-  if (/cloudinary\.com/i.test(url) && !/cloudinary\.com.*\/image\/upload/i.test(url)) {
-    // Check if it's raw upload (likely PDF)
-    if (/cloudinary\.com.*\/raw\/upload/i.test(url) || /cloudinary\.com.*\/v\d+\/.*\/.*\.(pdf|raw)/i.test(url)) {
-      return true;
-    }
-  }
-  return false;
-};
+import { X, ExternalLink, FileText, Loader, Download } from 'lucide-react';
 
 const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [previewType, setPreviewType] = useState('auto');
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [fileType, setFileType] = useState('unknown');
 
   useEffect(() => {
-    if (url) {
-      console.log('MasterPlanPreviewModal - URL:', url);
-      setLoading(true);
-      setError(false);
-      const isImage = isImageUrl(url);
-      const isPdf = isPdfUrl(url);
-      console.log('MasterPlanPreviewModal - Is Image:', isImage, 'Is PDF:', isPdf);
-      
-      if (isImage) {
-        setPreviewType('image');
-        setLoading(false);
-      } else if (isPdf) {
-        setPreviewType('pdf');
-        // For PDFs, use Google Docs Viewer - it prevents download
-        setLoading(false);
-      } else {
-        setPreviewType('iframe');
-        setLoading(false);
+    if (!url) return;
+
+    // זיהוי סוג הקובץ וייצור URL לתצוגה מקדימה
+    const processUrl = () => {
+      // בדיקה אם זה PDF של Cloudinary
+      if (url.includes('cloudinary.com') && url.toLowerCase().endsWith('.pdf')) {
+        setFileType('pdf');
+        // הטריק: החלפת הסיומת .pdf ב-.jpg כדי לקבל את העמוד הראשון כתמונה
+        // הוספת f_auto,q_auto לאופטימיזציה אוטומטית
+        const imageUrl = url.replace(/\.pdf$/i, '.jpg'); 
+        
+        // אם ה-URL לא מכיל טרנספורמציות, נוסיף אותן אחרי /upload/
+        if (!imageUrl.includes('/upload/f_auto')) {
+             return imageUrl.replace('/upload/', '/upload/f_auto,q_auto,pg_1/');
+        }
+        return imageUrl;
       }
-    }
+      
+      // אם זו תמונה רגילה
+      if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url.includes('cloudinary.com')) {
+        setFileType('image');
+        return url;
+      }
+
+      // אחרת (למשל קובץ לא מזוהה)
+      setFileType('other');
+      return url;
+    };
+
+    setPreviewUrl(processUrl());
   }, [url]);
+
+  const handleImageLoad = () => setLoading(false);
+  const handleImageError = () => setLoading(false); // במקרה של שגיאה נציג כפתור הורדה
 
   if (!url) return null;
 
-  const handleImageLoad = () => {
-    setLoading(false);
-    setError(false);
-  };
-
-  const handleImageError = () => {
-    setLoading(false);
-    setError(true);
-  };
-
-  const handleIframeLoad = () => {
-    setLoading(false);
-    setError(false);
-  };
-
-  const handleIframeError = () => {
-    setLoading(false);
-    setError(true);
-  };
-
-  // Google Docs Viewer URL - this prevents download
-  const googleDocsViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 z-50" onClick={onClose}>
-      <div className="bg-slate-900 w-full max-w-5xl rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-white font-bold">
-            <FileText size={18} />
-            <span>{title}</span>
+    <div 
+      className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 z-50 animate-in fade-in duration-200" 
+      onClick={onClose}
+    >
+      <div 
+        className="bg-slate-900 w-full max-w-5xl rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" 
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900">
+          <div className="flex items-center gap-3 text-white">
+            <div className="bg-blue-600/20 p-2 rounded-lg text-blue-400">
+              <FileText size={20} />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg leading-tight">{title}</h3>
+              <p className="text-xs text-slate-400">
+                {fileType === 'pdf' ? 'PDF Preview (First Page)' : 'Image Preview'}
+              </p>
+            </div>
           </div>
+          
           <div className="flex items-center gap-2">
             <a
               href={url}
               target="_blank"
               rel="noreferrer"
-              className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 inline-flex items-center gap-1"
+              download
+              className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 transition-colors inline-flex items-center gap-2"
             >
-              Open <ExternalLink size={12} />
+              <Download size={16} />
+              <span className="hidden sm:inline">Download Original</span>
             </a>
             <button
-              type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-white"
-              aria-label="Close"
+              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
             >
-              <X />
+              <X size={20} />
             </button>
           </div>
         </div>
 
-        <div className="bg-black relative min-h-[400px]">
+        {/* Content Area */}
+        <div className="relative flex-1 bg-black/50 overflow-auto flex items-center justify-center min-h-[400px]">
           {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 z-10">
-              <Loader className="animate-spin text-white" size={32} />
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="flex flex-col items-center gap-3">
+                <Loader className="animate-spin text-blue-500" size={40} />
+                <span className="text-slate-400 text-sm">Loading preview...</span>
+              </div>
             </div>
           )}
-          
-          {error ? (
-            <div className="p-8 text-slate-300 text-center min-h-[400px] flex flex-col items-center justify-center">
-              <p className="mb-4">Unable to preview this file.</p>
-              <a
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2"
-              >
-                Open in new tab <ExternalLink size={16} />
-              </a>
-            </div>
-          ) : previewType === 'image' ? (
-            <div className="max-h-[80vh] overflow-auto">
-              <img 
-                src={url} 
-                alt={title} 
-                className="w-full h-auto"
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-              />
-            </div>
-          ) : previewType === 'pdf' ? (
-            <div className="relative w-full h-[80vh]">
-              {/* Always use Google Docs Viewer for PDFs - this prevents download */}
-              <iframe
-                key="pdf-viewer"
-                title={title}
-                src={googleDocsViewerUrl}
-                className="w-full h-full"
-                style={{ border: 'none' }}
-                onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                allow="fullscreen"
-              />
-            </div>
+
+          {/* תצוגה חכמה: גם ל-PDF אנחנו מציגים תמונה של העמוד הראשון */}
+          {(fileType === 'pdf' || fileType === 'image') ? (
+            <img 
+              src={previewUrl} 
+              alt={title} 
+              className={`max-w-full max-h-[80vh] object-contain transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
           ) : (
-            <div className="relative w-full h-[80vh]">
-              <iframe 
-                title={title} 
-                src={url}
-                className="w-full h-full"
-                onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                style={{ border: 'none' }}
-              />
+            // Fallback לקבצים שלא ניתן להציג כתמונה
+            <div className="text-center p-8">
+              <FileText size={64} className="mx-auto text-slate-600 mb-4" />
+              <p className="text-slate-300 mb-4">Preview not available for this file type.</p>
+              <a 
+                href={url} 
+                target="_blank" 
+                rel="noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                Click here to view file
+              </a>
             </div>
           )}
         </div>

@@ -110,7 +110,7 @@ const Layout = () => {
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-40">
-        <img src="/icon.png" alt="Dynamica" className="h-10 object-contain" />
+        <img src="/logo.jpg" alt="Dynamica" className="h-14 object-contain" />
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -133,7 +133,7 @@ const Layout = () => {
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="p-6 hidden md:block">
-          <img src="/icon.png" alt="Dynamica" className="h-12 object-contain mb-2" />
+          <img src="/logo.jpg" alt="Dynamica" className="h-16 object-contain mb-2" />
           <p className="text-xs text-slate-400 mt-1">{user?.name} ({user?.role})</p>
         </div>
 
