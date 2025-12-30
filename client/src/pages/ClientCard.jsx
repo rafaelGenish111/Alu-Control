@@ -26,6 +26,10 @@ const ClientCard = () => {
   const [editingProducts, setEditingProducts] = useState(false);
   const [productsDraft, setProductsDraft] = useState([]);
   const [savingProducts, setSavingProducts] = useState(false);
+  const [editingMaterials, setEditingMaterials] = useState(false);
+  const [materialsDraft, setMaterialsDraft] = useState([]);
+  const [savingMaterials, setSavingMaterials] = useState(false);
+  const [suppliersList, setSuppliersList] = useState([]);
   const [previewUrl, setPreviewUrl] = useState('');
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
@@ -66,6 +70,25 @@ const ClientCard = () => {
     setProductsDraft(existing);
   }, [order]);
 
+  useEffect(() => {
+    if (!order) return;
+    const existing = Array.isArray(order.materials) ? order.materials : [];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMaterialsDraft(existing);
+  }, [order]);
+
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/suppliers`, config);
+        setSuppliersList(res.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchSuppliers();
+  }, [config]);
+
   const addNote = async () => {
     if (!noteText.trim()) return;
     try {
@@ -103,6 +126,20 @@ const ClientCard = () => {
       console.error(e);
       setSavingProducts(false);
       alert('Error saving products');
+    }
+  };
+
+  const saveMaterials = async () => {
+    setSavingMaterials(true);
+    try {
+      await axios.put(`${API_URL}/orders/${id}/materials`, { materials: materialsDraft }, config);
+      setSavingMaterials(false);
+      setEditingMaterials(false);
+      fetchOrder();
+    } catch (e) {
+      console.error(e);
+      setSavingMaterials(false);
+      alert('Error saving materials');
     }
   };
 
@@ -389,7 +426,37 @@ const ClientCard = () => {
 
           {/* Items Table (Materials) */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
-            <h3 className="font-bold mb-6 flex items-center gap-2 text-lg"><Package className="text-blue-400" /> {t('items')}</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold flex items-center gap-2 text-lg"><Package className="text-blue-400" /> {t('items')}</h3>
+              {!editingMaterials ? (
+                <button
+                  onClick={() => setEditingMaterials(true)}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                >
+                  <Edit2 size={16} /> Edit
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingMaterials(false);
+                      const existing = Array.isArray(order.materials) ? order.materials : [];
+                      setMaterialsDraft(existing);
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveMaterials}
+                    disabled={savingMaterials}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                  >
+                    <Save size={16} /> {savingMaterials ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left text-slate-300">
                 <thead className="text-xs uppercase bg-slate-800/50 text-slate-400">
@@ -397,26 +464,127 @@ const ClientCard = () => {
                     <th className="p-3">{t('product')}</th>
                     <th className="p-3">{t('description')}</th>
                     <th className="p-3">{t('supplier')}</th>
-                    <th className="p-3">Status</th>
+                    <th className="p-3">Quantity</th>
+                    {editingMaterials && <th className="p-3">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
-                  {(Array.isArray(order.materials) ? order.materials : (order.items || [])).map((item, i) => {
-                    const productLabel = item.productType || item.materialType || item.type || '-';
-                    const supplierLabel = item.supplier || '-';
-                    const isOrdered = typeof item.isOrdered === 'boolean' ? item.isOrdered : false;
+                  {materialsDraft.length === 0 ? (
+                    <tr>
+                      <td colSpan={editingMaterials ? 5 : 4} className="p-4 text-center text-slate-500">No materials</td>
+                    </tr>
+                  ) : (
+                    materialsDraft.map((item, i) => {
+                      const productLabel = item.materialType || item.productType || item.type || '-';
+                      const supplierLabel = item.supplier || '-';
+                      const isOrdered = typeof item.isOrdered === 'boolean' ? item.isOrdered : false;
 
-                    return (
-                      <tr key={i}>
-                        <td className="p-3 font-medium text-white">{productLabel}</td>
-                        <td className="p-3">{item.description}</td>
-                        <td className="p-3 text-blue-300">{supplierLabel}</td>
-                        <td className="p-3">{isOrdered ? '✅' : '⏳'}</td>
-                      </tr>
-                    );
-                  })}
+                      return (
+                        <tr key={i}>
+                          <td className="p-3">
+                            {editingMaterials ? (
+                              <select
+                                value={item.materialType || ''}
+                                onChange={(e) => {
+                                  const updated = [...materialsDraft];
+                                  updated[i] = { ...updated[i], materialType: e.target.value };
+                                  setMaterialsDraft(updated);
+                                }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                              >
+                                <option value="Glass">Glass</option>
+                                <option value="Paint">Paint</option>
+                                <option value="Aluminum">Aluminum</option>
+                                <option value="Hardware">Hardware</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            ) : (
+                              <span className="font-medium text-white">{productLabel}</span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            {editingMaterials ? (
+                              <input
+                                type="text"
+                                value={item.description || ''}
+                                onChange={(e) => {
+                                  const updated = [...materialsDraft];
+                                  updated[i] = { ...updated[i], description: e.target.value };
+                                  setMaterialsDraft(updated);
+                                }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                              />
+                            ) : (
+                              <span>{item.description || '-'}</span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            {editingMaterials ? (
+                              <select
+                                value={item.supplier || ''}
+                                onChange={(e) => {
+                                  const updated = [...materialsDraft];
+                                  updated[i] = { ...updated[i], supplier: e.target.value };
+                                  setMaterialsDraft(updated);
+                                }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                              >
+                                <option value="">Select supplier</option>
+                                {suppliersList.map(s => (
+                                  <option key={s._id} value={s.name}>{s.name}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-blue-300">{supplierLabel}</span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            {editingMaterials ? (
+                              <input
+                                type="number"
+                                value={item.quantity || 1}
+                                onChange={(e) => {
+                                  const updated = [...materialsDraft];
+                                  updated[i] = { ...updated[i], quantity: parseInt(e.target.value) || 1 };
+                                  setMaterialsDraft(updated);
+                                }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                                min="1"
+                              />
+                            ) : (
+                              <span>{item.quantity || 1}</span>
+                            )}
+                          </td>
+                          {editingMaterials && (
+                            <td className="p-3">
+                              <button
+                                onClick={() => {
+                                  setMaterialsDraft(materialsDraft.filter((_, idx) => idx !== i));
+                                }}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
+              {editingMaterials && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      setMaterialsDraft([...materialsDraft, { materialType: 'Glass', description: '', supplier: '', quantity: 1 }]);
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                  >
+                    <Plus size={16} /> Add Material
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

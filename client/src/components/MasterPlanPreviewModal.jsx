@@ -1,11 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, ExternalLink, FileText, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set worker path for PDF.js - use a reliable CDN
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
+import React, { useState, useEffect } from 'react';
+import { X, ExternalLink, FileText, Loader } from 'lucide-react';
 
 const isImageUrl = (url) => {
   if (!url) return false;
@@ -44,11 +38,6 @@ const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [previewType, setPreviewType] = useState('auto');
-  const [pdfDoc, setPdfDoc] = useState(null);
-  const [pageNum, setPageNum] = useState(1);
-  const [numPages, setNumPages] = useState(0);
-  const [pdfPage, setPdfPage] = useState(null);
-  const canvasRef = useRef(null);
 
   useEffect(() => {
     if (url) {
@@ -61,133 +50,17 @@ const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
       
       if (isImage) {
         setPreviewType('image');
+        setLoading(false);
       } else if (isPdf) {
         setPreviewType('pdf');
-        loadPdf(url);
+        // For PDFs, use Google Docs Viewer - it prevents download
+        setLoading(false);
       } else {
         setPreviewType('iframe');
+        setLoading(false);
       }
     }
   }, [url]);
-
-  const loadPdf = async (pdfUrl) => {
-    try {
-      setLoading(true);
-      setError(false);
-      
-      // For Cloudinary URLs, fetch the PDF as blob to avoid download
-      let urlToLoad = pdfUrl;
-      
-      // If it's a Cloudinary URL, fetch it as blob first
-      if (pdfUrl.includes('cloudinary.com')) {
-        try {
-          const response = await fetch(pdfUrl, {
-            method: 'GET',
-            mode: 'cors',
-            credentials: 'omit'
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch PDF');
-          }
-          
-          const blob = await response.blob();
-          urlToLoad = URL.createObjectURL(blob);
-        } catch (fetchError) {
-          console.error('Error fetching PDF as blob:', fetchError);
-          // Fallback to direct URL
-        }
-      }
-      
-      // Load PDF document
-      const loadingTask = pdfjsLib.getDocument({
-        url: urlToLoad,
-        withCredentials: false,
-        httpHeaders: {},
-        disableAutoFetch: false,
-        disableStreaming: false
-      });
-      
-      const pdf = await loadingTask.promise;
-      setPdfDoc(pdf);
-      setNumPages(pdf.numPages);
-      setPageNum(1);
-      setLoading(false);
-      setError(false);
-    } catch (err) {
-      console.error('Error loading PDF:', err);
-      setLoading(false);
-      setError(true);
-    }
-  };
-
-  useEffect(() => {
-    if (pdfDoc && canvasRef.current && pageNum > 0) {
-      renderPage(pageNum);
-    }
-  }, [pdfDoc, pageNum]);
-
-  const renderPage = async (page) => {
-    if (!pdfDoc || !canvasRef.current || page < 1) return;
-    
-    try {
-      setLoading(true);
-      const pdfPage = await pdfDoc.getPage(page);
-      setPdfPage(pdfPage);
-      
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
-      // Calculate scale to fit container
-      const container = canvas.parentElement;
-      if (!container) {
-        setLoading(false);
-        return;
-      }
-      
-      const containerWidth = container.clientWidth - 32; // Padding
-      const containerHeight = container.clientHeight - 100; // Leave space for controls
-      
-      const viewport = pdfPage.getViewport({ scale: 1.0 });
-      const scale = Math.min(
-        containerWidth / viewport.width,
-        containerHeight / viewport.height,
-        2.0 // Max scale
-      );
-      
-      const scaledViewport = pdfPage.getViewport({ scale });
-      
-      canvas.height = scaledViewport.height;
-      canvas.width = scaledViewport.width;
-      
-      // Clear canvas
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      
-      const renderContext = {
-        canvasContext: context,
-        viewport: scaledViewport
-      };
-      
-      await pdfPage.render(renderContext).promise;
-      setLoading(false);
-    } catch (err) {
-      console.error('Error rendering PDF page:', err);
-      setLoading(false);
-      setError(true);
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (pageNum > 1) {
-      setPageNum(pageNum - 1);
-    }
-  };
-
-  const goToNextPage = () => {
-    if (pageNum < numPages) {
-      setPageNum(pageNum + 1);
-    }
-  };
 
   if (!url) return null;
 
@@ -211,6 +84,9 @@ const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
     setError(true);
   };
 
+  // Google Docs Viewer URL - this prevents download
+  const googleDocsViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 z-50" onClick={onClose}>
       <div className="bg-slate-900 w-full max-w-5xl rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -218,11 +94,6 @@ const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
           <div className="flex items-center gap-2 text-white font-bold">
             <FileText size={18} />
             <span>{title}</span>
-            {previewType === 'pdf' && numPages > 0 && (
-              <span className="text-sm text-slate-400 font-normal ml-2">
-                (Page {pageNum} of {numPages})
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -274,34 +145,18 @@ const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
               />
             </div>
           ) : previewType === 'pdf' ? (
-            <div className="relative w-full h-[80vh] flex flex-col">
-              {numPages > 1 && (
-                <div className="flex items-center justify-center gap-4 p-4 bg-slate-800 border-b border-slate-700">
-                  <button
-                    onClick={goToPrevPage}
-                    disabled={pageNum <= 1}
-                    className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2"
-                  >
-                    <ChevronLeft size={16} /> Previous
-                  </button>
-                  <span className="text-white text-sm">
-                    Page {pageNum} of {numPages}
-                  </span>
-                  <button
-                    onClick={goToNextPage}
-                    disabled={pageNum >= numPages}
-                    className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2"
-                  >
-                    Next <ChevronRight size={16} />
-                  </button>
-                </div>
-              )}
-              <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-                <canvas
-                  ref={canvasRef}
-                  className="max-w-full h-auto shadow-lg"
-                />
-              </div>
+            <div className="relative w-full h-[80vh]">
+              {/* Always use Google Docs Viewer for PDFs - this prevents download */}
+              <iframe
+                key="pdf-viewer"
+                title={title}
+                src={googleDocsViewerUrl}
+                className="w-full h-full"
+                style={{ border: 'none' }}
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
+                allow="fullscreen"
+              />
             </div>
           ) : (
             <div className="relative w-full h-[80vh]">

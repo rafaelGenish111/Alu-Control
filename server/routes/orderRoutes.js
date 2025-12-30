@@ -9,6 +9,7 @@ const {
     addOrderNote,
     updateProduction,
     updateProducts,
+    updateMaterials,
     updateInstallTakeList,
     updateOrderIssue
 } = require('../controllers/orderController');
@@ -50,6 +51,7 @@ router.post('/', protect, authorize('super_admin', 'admin', 'office'), createOrd
 router.put('/:id/status', protect, updateOrderStatus);
 router.put('/:id/production', protect, authorize('super_admin', 'admin', 'production'), updateProduction);
 router.put('/:id/products', protect, authorize('super_admin', 'admin', 'office'), updateProducts);
+router.put('/:id/materials', protect, authorize('super_admin', 'admin', 'office'), updateMaterials);
 router.put('/:id/install-take-list', protect, authorize('super_admin', 'admin', 'office', 'production', 'installer'), updateInstallTakeList);
 router.put('/:id/issue', protect, authorize('super_admin', 'admin', 'office'), updateOrderIssue);
 router.put('/:id/final-invoice', protect, authorize('super_admin', 'admin', 'office'), updateFinalInvoice);

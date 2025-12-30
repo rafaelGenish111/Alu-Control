@@ -152,6 +152,43 @@ exports.updateProducts = async (req, res) => {
   }
 };
 
+// --- UPDATE MATERIALS FOR FACTORY ---
+exports.updateMaterials = async (req, res) => {
+  const { materials } = req.body;
+  const userName = req.user ? req.user.name : 'System';
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (Array.isArray(materials)) {
+      order.materials = materials;
+      
+      // Recalculate production status based on new materials
+      const prodStatus = {
+        glass: materials.some(m => m.materialType === 'Glass') ? 'pending' : 'not_needed',
+        paint: materials.some(m => m.materialType === 'Paint') ? 'pending' : 'not_needed',
+        aluminum: materials.some(m => m.materialType === 'Aluminum') ? 'pending' : 'not_needed',
+        hardware: materials.some(m => m.materialType === 'Hardware') ? 'pending' : 'not_needed',
+        other: materials.some(m => m.materialType === 'Other') ? 'pending' : 'not_needed',
+      };
+      order.productionStatus = prodStatus;
+    }
+
+    order.timeline.push({
+      status: order.status,
+      note: 'Materials for Factory updated',
+      date: new Date(),
+      user: userName
+    });
+
+    const saved = await order.save();
+    res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.updateInstallTakeList = async (req, res) => {
   const { installTakeList } = req.body;
   const userName = req.user ? req.user.name : 'System';
