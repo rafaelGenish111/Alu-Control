@@ -55,7 +55,10 @@ const resources = {
       "new_col_desc": "Description",
       "new_materials_title": "Materials to Order",
       "new_mat_glass": "Glass",
+      "new_mat_aluminum": "Aluminum",
       "new_mat_paint": "Paint",
+      "new_mat_hardware": "Hardware",
+      "new_mat_pvc": "PVC",
       "new_mat_other": "Other",
       "new_select_supplier": "Select Supplier",
       "new_btn_create": "Create Order",
@@ -359,6 +362,14 @@ const resources = {
       "back_to_list": "Back to List",
       "files_desc": "Upload and manage files related to this order",
       "no_files_yet": "No files uploaded yet",
+      "what_to_take": "What to take to installation",
+      "add_item": "Add item...",
+      "cancel_order": "Cancel Order",
+      "cancel_order_confirm": "Cancel this order?",
+      "cancelled_orders": "Cancelled Orders",
+      "material_pending": "Material Pending",
+      "add_product": "Add Product",
+      "add_material": "Add Material",
 
       // --- Calendar ---
       "calendar": "Calendar",
@@ -438,9 +449,12 @@ const resources = {
       "new_col_type": "tipo", // Context: New Order -> Products
       "new_col_desc": "descripción",
       "new_materials_title": "material a pedir",
-      "new_mat_glass": "cristales", // Context: New Order -> Material
-      "new_mat_paint": "lacado",
-      "new_mat_other": "otro",
+      "new_mat_glass": "Cristal", // Context: New Order -> Material
+      "new_mat_aluminum": "Aluminio",
+      "new_mat_paint": "Lacado",
+      "new_mat_hardware": "Herrajes",
+      "new_mat_pvc": "PVC",
+      "new_mat_other": "Otro",
       "new_select_supplier": "proveedor",
       "new_btn_create": "crear",
 
@@ -743,6 +757,14 @@ const resources = {
       "back_to_list": "Volver a la Lista",
       "files_desc": "Sube y gestiona archivos relacionados con este pedido",
       "no_files_yet": "Aún no se han subido archivos",
+      "what_to_take": "Qué llevar a la instalación",
+      "add_item": "Añadir artículo...",
+      "cancel_order": "Cancelar Trabajo",
+      "cancel_order_confirm": "¿Cancelar este trabajo?",
+      "cancelled_orders": "Trabajos Cancelados",
+      "material_pending": "Por llegar",
+      "add_product": "Añadir Producto",
+      "add_material": "Añadir Material",
 
       // --- Calendar ---
       "calendar": "Calendario",

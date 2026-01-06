@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, MapPin, Phone, Mail, Package, FileText, CheckCircle,
   Loader, Image as ImageIcon,
-  FileCheck, UploadCloud, ExternalLink, MessageSquare, ClipboardList, Plus, Trash2, Save, Edit2
+  FileCheck, UploadCloud, ExternalLink, MessageSquare, ClipboardList, Plus, Trash2, Save, Edit2, Calendar
 } from 'lucide-react';
 import { API_URL } from '../config/api';
 import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
@@ -31,6 +31,16 @@ const ClientCard = () => {
   const [savingMaterials, setSavingMaterials] = useState(false);
   const [suppliersList, setSuppliersList] = useState([]);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [editingClient, setEditingClient] = useState(false);
+  const [clientDraft, setClientDraft] = useState({ clientName: '', clientPhone: '', clientEmail: '', clientAddress: '' });
+  const [savingClient, setSavingClient] = useState(false);
+  const [editingOrderGeneral, setEditingOrderGeneral] = useState(false);
+  const [orderGeneralDraft, setOrderGeneralDraft] = useState({ manualOrderNumber: '', estimatedInstallationDays: 1, depositPaid: false, depositPaidAt: '', region: '' });
+  const [savingOrderGeneral, setSavingOrderGeneral] = useState(false);
+  const [editingInstallers, setEditingInstallers] = useState(false);
+  const [installersDraft, setInstallersDraft] = useState({ installerIds: [], startDate: '', endDate: '' });
+  const [savingInstallers, setSavingInstallers] = useState(false);
+  const [installersList, setInstallersList] = useState([]);
   const user = JSON.parse(localStorage.getItem('userInfo'));
   const token = user?.token;
   const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -89,6 +99,41 @@ const ClientCard = () => {
     fetchSuppliers();
   }, [config]);
 
+  useEffect(() => {
+    const fetchInstallers = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/orders/install/team-list`, config);
+        setInstallersList(res.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchInstallers();
+  }, [config]);
+
+  useEffect(() => {
+    if (!order) return;
+    setClientDraft({
+      clientName: order.clientName || '',
+      clientPhone: order.clientPhone || '',
+      clientEmail: order.clientEmail || '',
+      clientAddress: order.clientAddress || ''
+    });
+    setOrderGeneralDraft({
+      manualOrderNumber: order.manualOrderNumber || '',
+      estimatedInstallationDays: order.estimatedInstallationDays || 1,
+      depositPaid: order.depositPaid || false,
+      depositPaidAt: order.depositPaidAt ? new Date(order.depositPaidAt).toISOString().slice(0, 10) : '',
+      region: order.region || ''
+    });
+    const installerIds = Array.isArray(order.installers) ? order.installers.map(i => typeof i === 'string' ? i : i._id) : [];
+    setInstallersDraft({
+      installerIds,
+      startDate: order.installDateStart ? new Date(order.installDateStart).toISOString().slice(0, 10) : '',
+      endDate: order.installDateEnd ? new Date(order.installDateEnd).toISOString().slice(0, 10) : ''
+    });
+  }, [order]);
+
   const addNote = async () => {
     if (!noteText.trim()) return;
     try {
@@ -140,6 +185,68 @@ const ClientCard = () => {
       console.error(e);
       setSavingMaterials(false);
       alert('Error saving materials');
+    }
+  };
+
+  const saveClientDetails = async () => {
+    setSavingClient(true);
+    try {
+      await axios.put(`${API_URL}/orders/${id}/client`, clientDraft, config);
+      setSavingClient(false);
+      setEditingClient(false);
+      fetchOrder();
+    } catch (e) {
+      console.error(e);
+      setSavingClient(false);
+      alert(t('error_updating_status'));
+    }
+  };
+
+  const saveOrderGeneral = async () => {
+    setSavingOrderGeneral(true);
+    try {
+      await axios.put(`${API_URL}/orders/${id}`, orderGeneralDraft, config);
+      setSavingOrderGeneral(false);
+      setEditingOrderGeneral(false);
+      fetchOrder();
+    } catch (e) {
+      console.error(e);
+      setSavingOrderGeneral(false);
+      alert(t('error_updating_status'));
+    }
+  };
+
+  const saveInstallers = async () => {
+    setSavingInstallers(true);
+    try {
+      await axios.put(`${API_URL}/orders/${id}/installers`, installersDraft, config);
+      setSavingInstallers(false);
+      setEditingInstallers(false);
+      fetchOrder();
+    } catch (e) {
+      console.error(e);
+      setSavingInstallers(false);
+      alert(t('error_updating_status'));
+    }
+  };
+
+  const cancelOrder = async () => {
+    if (!window.confirm(t('cancel_order_confirm') || 'Cancel this order?')) return;
+    try {
+      await axios.put(`${API_URL}/orders/${id}/status`, { status: 'cancelled' }, config);
+      fetchOrder();
+    } catch (e) {
+      console.error(e);
+      alert(t('error_updating_status'));
+    }
+  };
+
+  const toggleInstaller = (installerId) => {
+    const current = installersDraft.installerIds;
+    if (current.includes(installerId)) {
+      setInstallersDraft({ ...installersDraft, installerIds: current.filter(i => i !== installerId) });
+    } else {
+      setInstallersDraft({ ...installersDraft, installerIds: [...current, installerId] });
     }
   };
 
@@ -226,22 +333,202 @@ const ClientCard = () => {
       {/* Header */}
       <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-xl mb-6 relative overflow-hidden">
         <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-white">{order.clientName}</h1>
-            <p className="text-slate-400 mt-1 flex items-center gap-2"><MapPin size={16} /> {order.clientAddress}</p>
-            <p className="text-slate-400 flex items-center gap-2"><Phone size={16} /> {order.clientPhone}</p>
-            {order.clientEmail && (
-              <span className="flex items-center gap-2 hover:text-blue-400 transition cursor-pointer" title="Click to email">
-                <Mail size={16} className="text-blue-500" />
-                <a href={`mailto:${order.clientEmail}`}>{order.clientEmail}</a>
-              </span>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-4">
+              <h1 className="text-3xl font-bold text-white">
+                {editingClient ? (
+                  <input
+                    type="text"
+                    value={clientDraft.clientName}
+                    onChange={(e) => setClientDraft({ ...clientDraft, clientName: e.target.value })}
+                    className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-2xl font-bold"
+                  />
+                ) : (
+                  order.clientName
+                )}
+              </h1>
+              {!editingClient && (
+                <button
+                  onClick={() => setEditingClient(true)}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                >
+                  <Edit2 size={14} /> {t('edit')}
+                </button>
+              )}
+            </div>
+            {editingClient ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('address')}</label>
+                  <input
+                    type="text"
+                    value={clientDraft.clientAddress}
+                    onChange={(e) => setClientDraft({ ...clientDraft, clientAddress: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('phone')}</label>
+                  <input
+                    type="text"
+                    value={clientDraft.clientPhone}
+                    onChange={(e) => setClientDraft({ ...clientDraft, clientPhone: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('email')}</label>
+                  <input
+                    type="email"
+                    value={clientDraft.clientEmail}
+                    onChange={(e) => setClientDraft({ ...clientDraft, clientEmail: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveClientDetails}
+                    disabled={savingClient}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                  >
+                    <Save size={16} /> {savingClient ? t('loading') : t('save')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingClient(false);
+                      setClientDraft({
+                        clientName: order.clientName || '',
+                        clientPhone: order.clientPhone || '',
+                        clientEmail: order.clientEmail || '',
+                        clientAddress: order.clientAddress || ''
+                      });
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className="text-slate-400 mt-1 flex items-center gap-2"><MapPin size={16} /> {order.clientAddress}</p>
+                <p className="text-slate-400 flex items-center gap-2"><Phone size={16} /> {order.clientPhone}</p>
+                {order.clientEmail && (
+                  <span className="flex items-center gap-2 hover:text-blue-400 transition cursor-pointer" title="Click to email">
+                    <Mail size={16} className="text-blue-500" />
+                    <a href={`mailto:${order.clientEmail}`}>{order.clientEmail}</a>
+                  </span>
+                )}
+              </div>
             )}
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-mono text-slate-500">#{displayOrderNumber}</div>
-            <span className={`px-3 py-1 rounded text-sm uppercase font-bold border inline-block mt-2 ${order.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-blue-600/20 text-blue-300 border-blue-500/30'}`}>
-              {order.status}
-            </span>
+          <div className="text-right ml-6">
+            <div className="flex items-center gap-3 mb-2">
+              {editingOrderGeneral ? (
+                <input
+                  type="text"
+                  value={orderGeneralDraft.manualOrderNumber}
+                  onChange={(e) => setOrderGeneralDraft({ ...orderGeneralDraft, manualOrderNumber: e.target.value })}
+                  className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-xl"
+                />
+              ) : (
+                <div className="text-2xl font-mono text-slate-500">#{displayOrderNumber}</div>
+              )}
+              {!editingOrderGeneral && (
+                <button
+                  onClick={() => setEditingOrderGeneral(true)}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                >
+                  <Edit2 size={14} /> {t('edit')}
+                </button>
+              )}
+            </div>
+            {editingOrderGeneral ? (
+              <div className="space-y-3 bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('new_est_work_days')}</label>
+                  <input
+                    type="number"
+                    value={orderGeneralDraft.estimatedInstallationDays}
+                    onChange={(e) => setOrderGeneralDraft({ ...orderGeneralDraft, estimatedInstallationDays: parseInt(e.target.value) || 1 })}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('new_region')}</label>
+                  <input
+                    type="text"
+                    value={orderGeneralDraft.region}
+                    onChange={(e) => setOrderGeneralDraft({ ...orderGeneralDraft, region: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('deposit_paid')}</label>
+                  <label className="flex items-center gap-2 text-sm text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={orderGeneralDraft.depositPaid}
+                      onChange={(e) => setOrderGeneralDraft({ ...orderGeneralDraft, depositPaid: e.target.checked })}
+                      className="accent-emerald-500"
+                    />
+                    <span>{t('paid')}</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('new_deposit_date')}</label>
+                  <input
+                    type="date"
+                    value={orderGeneralDraft.depositPaidAt}
+                    onChange={(e) => setOrderGeneralDraft({ ...orderGeneralDraft, depositPaidAt: e.target.value })}
+                    disabled={!orderGeneralDraft.depositPaid}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white disabled:opacity-50"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveOrderGeneral}
+                    disabled={savingOrderGeneral}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                  >
+                    <Save size={16} /> {savingOrderGeneral ? t('loading') : t('save')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingOrderGeneral(false);
+                      setOrderGeneralDraft({
+                        manualOrderNumber: order.manualOrderNumber || '',
+                        estimatedInstallationDays: order.estimatedInstallationDays || 1,
+                        depositPaid: order.depositPaid || false,
+                        depositPaidAt: order.depositPaidAt ? new Date(order.depositPaidAt).toISOString().slice(0, 10) : '',
+                        region: order.region || ''
+                      });
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="text-sm text-slate-400 mb-1">{t('new_est_work_days')}: {order.estimatedInstallationDays || 1}</div>
+                {order.region && <div className="text-sm text-slate-400 mb-1">{t('region')}: {order.region}</div>}
+                {order.depositPaidAt && <div className="text-sm text-slate-400 mb-1">{t('new_deposit_date')}: {new Date(order.depositPaidAt).toLocaleDateString()}</div>}
+                <span className={`px-3 py-1 rounded text-sm uppercase font-bold border inline-block mt-2 ${order.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : order.status === 'cancelled' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-blue-600/20 text-blue-300 border-blue-500/30'}`}>
+                  {order.status}
+                </span>
+                {order.status !== 'completed' && order.status !== 'cancelled' && (
+                  <button
+                    onClick={cancelOrder}
+                    className="mt-2 block w-full bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold"
+                  >
+                    {t('cancel_order') || 'Cancel Order'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -292,6 +579,72 @@ const ClientCard = () => {
             )}
           </div>
 
+          {/* What to take to installation */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="font-bold flex items-center gap-2 text-lg">
+                <ClipboardList className="text-emerald-400" /> {t('what_to_take') || 'What to take to installation'}
+              </h3>
+              <button
+                type="button"
+                onClick={saveTakeList}
+                disabled={savingTakeList}
+                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700 inline-flex items-center gap-2"
+              >
+                <Save size={16} /> {savingTakeList ? t('loading') : t('save')}
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {takeListDraft.map((it, idx) => (
+                <div key={`${it.label}-${idx}`} className="flex items-center justify-between gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2">
+                  <label className="flex items-center gap-3 text-sm text-slate-200 w-full">
+                    <input
+                      type="checkbox"
+                      className="accent-emerald-500"
+                      checked={Boolean(it.done)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
+                      }}
+                    />
+                    <span className={it.done ? 'line-through text-slate-500' : ''}>{it.label}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setTakeListDraft((prev) => prev.filter((_, i) => i !== idx))}
+                    className="text-slate-500 hover:text-red-400"
+                    title="Remove"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <input
+                type="text"
+                value={newTakeItem}
+                onChange={(e) => setNewTakeItem(e.target.value)}
+                placeholder={t('add_item') || 'Add item...'}
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder:text-slate-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const label = newTakeItem.trim();
+                  if (!label) return;
+                  setTakeListDraft((prev) => [...prev, { label, done: false }]);
+                  setNewTakeItem('');
+                }}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold inline-flex items-center gap-2"
+              >
+                <Plus size={16} /> {t('add')}
+              </button>
+            </div>
+          </div>
+
           {/* Products for Client Table */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
             <div className="flex items-center justify-between mb-6">
@@ -301,7 +654,7 @@ const ClientCard = () => {
                   onClick={() => setEditingProducts(true)}
                   className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                 >
-                  <Edit2 size={16} /> Edit
+                  <Edit2 size={16} /> {t('edit')}
                 </button>
               ) : (
                 <div className="flex gap-2">
@@ -313,14 +666,14 @@ const ClientCard = () => {
                     }}
                     className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     onClick={saveProducts}
                     disabled={savingProducts}
                     className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                   >
-                    <Save size={16} /> {savingProducts ? 'Saving...' : 'Save'}
+                    <Save size={16} /> {savingProducts ? t('loading') : t('save')}
                   </button>
                 </div>
               )}
@@ -417,7 +770,7 @@ const ClientCard = () => {
                     }}
                     className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                   >
-                    <Plus size={16} /> Add Product
+                    <Plus size={16} /> {t('add_product') || 'Add Product'}
                   </button>
                 </div>
               )}
@@ -433,7 +786,7 @@ const ClientCard = () => {
                   onClick={() => setEditingMaterials(true)}
                   className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                 >
-                  <Edit2 size={16} /> Edit
+                  <Edit2 size={16} /> {t('edit')}
                 </button>
               ) : (
                 <div className="flex gap-2">
@@ -445,14 +798,14 @@ const ClientCard = () => {
                     }}
                     className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     onClick={saveMaterials}
                     disabled={savingMaterials}
                     className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                   >
-                    <Save size={16} /> {savingMaterials ? 'Saving...' : 'Save'}
+                    <Save size={16} /> {savingMaterials ? t('loading') : t('save')}
                   </button>
                 </div>
               )}
@@ -492,11 +845,12 @@ const ClientCard = () => {
                                 }}
                                 className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
                               >
-                                <option value="Glass">Glass</option>
-                                <option value="Paint">Paint</option>
-                                <option value="Aluminum">Aluminum</option>
-                                <option value="Hardware">Hardware</option>
-                                <option value="Other">Other</option>
+                                <option value="Glass">{t('new_mat_glass')}</option>
+                                <option value="Aluminum">{t('new_mat_aluminum')}</option>
+                                <option value="Paint">{t('new_mat_paint')}</option>
+                                <option value="Hardware">{t('new_mat_hardware')}</option>
+                                <option value="PVC">{t('new_mat_pvc')}</option>
+                                <option value="Other">{t('new_mat_other')}</option>
                               </select>
                             ) : (
                               <span className="font-medium text-white">{productLabel}</span>
@@ -581,7 +935,7 @@ const ClientCard = () => {
                     }}
                     className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                   >
-                    <Plus size={16} /> Add Material
+                    <Plus size={16} /> {t('add_material') || 'Add Material'}
                   </button>
                 </div>
               )}
@@ -653,9 +1007,116 @@ const ClientCard = () => {
           </div>
         </div>
 
-        {/* LEFT COLUMN: Gallery */}
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-full">
-          <h3 className="font-bold mb-4 flex items-center gap-2 text-lg"><ImageIcon className="text-purple-400" /> {t('files_media')}</h3>
+        {/* LEFT COLUMN: Installation Details + Gallery */}
+        <div className="space-y-6">
+          {/* Installation Details */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold flex items-center gap-2 text-lg"><Calendar className="text-blue-400" /> {t('scheduled_date')}</h3>
+              {!editingInstallers && (
+                <button
+                  onClick={() => setEditingInstallers(true)}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                >
+                  <Edit2 size={14} /> {t('edit')}
+                </button>
+              )}
+            </div>
+            {editingInstallers ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('start_date')}</label>
+                  <input
+                    type="date"
+                    value={installersDraft.startDate}
+                    onChange={(e) => setInstallersDraft({ ...installersDraft, startDate: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">{t('end_date')}</label>
+                  <input
+                    type="date"
+                    value={installersDraft.endDate}
+                    onChange={(e) => setInstallersDraft({ ...installersDraft, endDate: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-2">{t('assign_team')}</label>
+                  <div className="bg-slate-800 border border-slate-600 rounded-xl p-2 max-h-40 overflow-y-auto">
+                    {installersList.map(worker => (
+                      <div key={worker._id}
+                        onClick={() => toggleInstaller(worker._id)}
+                        className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${installersDraft.installerIds.includes(worker._id) ? 'bg-blue-600/20 border border-blue-500/50' : 'hover:bg-slate-700'
+                          }`}>
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${installersDraft.installerIds.includes(worker._id) ? 'bg-blue-500 border-blue-500' : 'border-slate-500'
+                          }`}>
+                          {installersDraft.installerIds.includes(worker._id) && <div className="w-2 h-2 bg-white rounded-full" />}
+                        </div>
+                        <span className="text-sm text-white">{worker.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveInstallers}
+                    disabled={savingInstallers}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                  >
+                    <Save size={16} /> {savingInstallers ? t('loading') : t('save')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingInstallers(false);
+                      const installerIds = Array.isArray(order.installers) ? order.installers.map(i => typeof i === 'string' ? i : i._id) : [];
+                      setInstallersDraft({
+                        installerIds,
+                        startDate: order.installDateStart ? new Date(order.installDateStart).toISOString().slice(0, 10) : '',
+                        endDate: order.installDateEnd ? new Date(order.installDateEnd).toISOString().slice(0, 10) : ''
+                      });
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {order.installDateStart && (
+                  <div className="text-sm text-slate-300">
+                    <span className="text-slate-400">{t('start_date')}:</span> {new Date(order.installDateStart).toLocaleDateString()}
+                  </div>
+                )}
+                {order.installDateEnd && (
+                  <div className="text-sm text-slate-300">
+                    <span className="text-slate-400">{t('end_date')}:</span> {new Date(order.installDateEnd).toLocaleDateString()}
+                  </div>
+                )}
+                {order.installers && order.installers.length > 0 && (
+                  <div className="text-sm text-slate-300">
+                    <span className="text-slate-400">{t('assign_team')}:</span>
+                    <div className="mt-1 space-y-1">
+                      {order.installers.map((inst, idx) => (
+                        <div key={idx} className="text-slate-200">
+                          {typeof inst === 'string' ? inst : inst.name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(!order.installDateStart && !order.installDateEnd && (!order.installers || order.installers.length === 0)) && (
+                  <div className="text-sm text-slate-500">{t('no_installs')}</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Gallery */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-full">
+            <h3 className="font-bold mb-4 flex items-center gap-2 text-lg"><ImageIcon className="text-purple-400" /> {t('files_media')}</h3>
           <p className="text-xs text-slate-500 mb-4">{t('files_desc')}</p>
 
           <div className="flex-1 space-y-3 mb-6 overflow-y-auto min-h-[200px] max-h-[400px] pr-2 custom-scrollbar">
@@ -695,71 +1156,6 @@ const ClientCard = () => {
             <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'document')} disabled={!!uploadingType} />
           </label>
         </div>
-
-        {/* What to take to installation */}
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <h3 className="font-bold flex items-center gap-2 text-lg">
-              <ClipboardList className="text-emerald-400" /> What to take to installation
-            </h3>
-            <button
-              type="button"
-              onClick={saveTakeList}
-              disabled={savingTakeList}
-              className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700 inline-flex items-center gap-2"
-            >
-              <Save size={16} /> {savingTakeList ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {takeListDraft.map((it, idx) => (
-              <div key={`${it.label}-${idx}`} className="flex items-center justify-between gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2">
-                <label className="flex items-center gap-3 text-sm text-slate-200 w-full">
-                  <input
-                    type="checkbox"
-                    className="accent-emerald-500"
-                    checked={Boolean(it.done)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
-                    }}
-                  />
-                  <span className={it.done ? 'line-through text-slate-500' : ''}>{it.label}</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setTakeListDraft((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-slate-500 hover:text-red-400"
-                  title="Remove"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex gap-2">
-            <input
-              type="text"
-              value={newTakeItem}
-              onChange={(e) => setNewTakeItem(e.target.value)}
-              placeholder="Add item..."
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder:text-slate-500"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const label = newTakeItem.trim();
-                if (!label) return;
-                setTakeListDraft((prev) => [...prev, { label, done: false }]);
-                setNewTakeItem('');
-              }}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold inline-flex items-center gap-2"
-            >
-              <Plus size={16} /> Add
-            </button>
-          </div>
         </div>
 
       </div>

@@ -18,7 +18,7 @@ const CompletedOrders = () => {
   const fetchOrders = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/orders`, config);
-      setOrders(res.data.filter((o) => o.status === 'completed'));
+      setOrders(res.data.filter((o) => o.status === 'completed' || o.status === 'cancelled'));
       setLoading(false);
     } catch (e) {
       console.error(e);
@@ -29,47 +29,90 @@ const CompletedOrders = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  const completedOrders = orders.filter(o => o.status === 'completed');
+  const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+
   return (
     <div className="max-w-6xl mx-auto">
       <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
         <CheckCircle className="text-emerald-500" /> {t('completed_orders')}
       </h2>
 
-      <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
-        <table className="w-full text-left text-sm text-slate-300">
-          <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
-            <tr>
-              <th className="p-4">{t('order_col')}</th>
-              <th className="p-4">{t('client')}</th>
-              <th className="p-4">{t('region')}</th>
-              <th className="p-4">{t('completed_closed')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {loading ? (
-              <tr><td colSpan="4" className="p-8 text-center text-slate-400">{t('loading')}</td></tr>
-            ) : orders.length === 0 ? (
-              <tr><td colSpan="4" className="p-8 text-center text-slate-500">{t('no_completed_orders')}</td></tr>
-            ) : (
-              orders.map((o) => {
-                const displayOrderNumber = o.manualOrderNumber || o.orderNumber || o._id;
-                return (
-                  <tr
-                    key={o._id}
-                    className="hover:bg-slate-800/30 transition cursor-pointer"
-                    onClick={() => navigate(`/orders/${o._id}`)}
-                  >
-                    <td className="p-4 font-mono text-emerald-300">#{displayOrderNumber}</td>
-                    <td className="p-4 font-semibold text-white">{o.clientName}</td>
-                    <td className="p-4">{o.region || '—'}</td>
-                    <td className="p-4 text-slate-500">{o.updatedAt ? new Date(o.updatedAt).toLocaleDateString() : '—'}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+      {/* Completed Orders */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold text-white mb-4">{t('completed_orders')}</h3>
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
+              <tr>
+                <th className="p-4">{t('order_col')}</th>
+                <th className="p-4">{t('client')}</th>
+                <th className="p-4">{t('region')}</th>
+                <th className="p-4">{t('completed_closed')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {loading ? (
+                <tr><td colSpan="4" className="p-8 text-center text-slate-400">{t('loading')}</td></tr>
+              ) : completedOrders.length === 0 ? (
+                <tr><td colSpan="4" className="p-8 text-center text-slate-500">{t('no_completed_orders')}</td></tr>
+              ) : (
+                completedOrders.map((o) => {
+                  const displayOrderNumber = o.manualOrderNumber || o.orderNumber || o._id;
+                  return (
+                    <tr
+                      key={o._id}
+                      className="hover:bg-slate-800/30 transition cursor-pointer"
+                      onClick={() => navigate(`/orders/${o._id}`)}
+                    >
+                      <td className="p-4 font-mono text-emerald-300">#{displayOrderNumber}</td>
+                      <td className="p-4 font-semibold text-white">{o.clientName}</td>
+                      <td className="p-4">{o.region || '—'}</td>
+                      <td className="p-4 text-slate-500">{o.updatedAt ? new Date(o.updatedAt).toLocaleDateString() : '—'}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Cancelled Orders */}
+      {cancelledOrders.length > 0 && (
+        <div>
+          <h3 className="text-xl font-bold text-white mb-4">{t('cancelled_orders') || 'Cancelled Orders'}</h3>
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+            <table className="w-full text-left text-sm text-slate-300">
+              <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
+                <tr>
+                  <th className="p-4">{t('order_col')}</th>
+                  <th className="p-4">{t('client')}</th>
+                  <th className="p-4">{t('region')}</th>
+                  <th className="p-4">{t('completed_closed')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {cancelledOrders.map((o) => {
+                  const displayOrderNumber = o.manualOrderNumber || o.orderNumber || o._id;
+                  return (
+                    <tr
+                      key={o._id}
+                      className="hover:bg-slate-800/30 transition cursor-pointer"
+                      onClick={() => navigate(`/orders/${o._id}`)}
+                    >
+                      <td className="p-4 font-mono text-red-300">#{displayOrderNumber}</td>
+                      <td className="p-4 font-semibold text-white">{o.clientName}</td>
+                      <td className="p-4">{o.region || '—'}</td>
+                      <td className="p-4 text-slate-500">{o.updatedAt ? new Date(o.updatedAt).toLocaleDateString() : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

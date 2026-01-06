@@ -53,15 +53,12 @@ exports.createOrder = async (req, res) => {
     };
 
     // Production checklist defaults:
-    // - If the order has no relevant items for a category, mark it Done by default.
-    // - Otherwise, it starts as Not done.
-    const hasGlass = materials.some((m) => m.materialType === 'Glass');
-    const hasPaint = materials.some((m) => m.materialType === 'Paint');
-    const hasMaterials = materials.some((m) => ['Aluminum', 'Hardware', 'Other'].includes(m.materialType));
+    // - All start as Not done (false)
     const productionChecklist = {
-      glassDone: hasGlass ? false : true,
-      paintDone: hasPaint ? false : true,
-      materialsDone: hasMaterials ? false : true
+      glassDone: false,
+      paintDone: false,
+      materialsDone: false,
+      materialPending: false
     };
 
     // Determine initial status: if materials needed -> materials_pending, else -> production
@@ -659,6 +656,88 @@ exports.addOrderNote = async (req, res) => {
 
     const saved = await order.save();
     res.status(201).json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --- UPDATE CLIENT DETAILS ---
+exports.updateClientDetails = async (req, res) => {
+  const { clientName, clientPhone, clientEmail, clientAddress } = req.body;
+  const userName = req.user ? req.user.name : 'System';
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (typeof clientName === 'string') order.clientName = clientName;
+    if (typeof clientPhone === 'string') order.clientPhone = clientPhone;
+    if (typeof clientEmail === 'string') order.clientEmail = clientEmail;
+    if (typeof clientAddress === 'string') order.clientAddress = clientAddress;
+
+    order.timeline.push({
+      status: order.status,
+      note: 'Client details updated',
+      date: new Date(),
+      user: userName
+    });
+
+    const saved = await order.save();
+    res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --- UPDATE ORDER GENERAL FIELDS ---
+exports.updateOrderGeneral = async (req, res) => {
+  const { manualOrderNumber, estimatedInstallationDays, depositPaid, depositPaidAt, region } = req.body;
+  const userName = req.user ? req.user.name : 'System';
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (typeof manualOrderNumber === 'string' && manualOrderNumber.trim()) {
+      // Check for duplicate if changing
+      if (manualOrderNumber !== order.manualOrderNumber) {
+        const exists = await Order.findOne({ manualOrderNumber });
+        if (exists) {
+          return res.status(400).json({ message: 'Order Number already exists' });
+        }
+      }
+      order.manualOrderNumber = manualOrderNumber;
+      order.orderNumber = manualOrderNumber; // Keep in sync
+    }
+
+    if (typeof estimatedInstallationDays === 'number') {
+      order.estimatedInstallationDays = estimatedInstallationDays;
+    }
+
+    if (typeof depositPaid === 'boolean') {
+      order.depositPaid = depositPaid;
+      if (!depositPaid) {
+        order.depositPaidAt = null;
+      }
+    }
+
+    if (depositPaidAt !== undefined) {
+      order.depositPaidAt = depositPaidAt ? new Date(depositPaidAt) : null;
+    }
+
+    if (typeof region === 'string') {
+      order.region = region;
+    }
+
+    order.timeline.push({
+      status: order.status,
+      note: 'Order general fields updated',
+      date: new Date(),
+      user: userName
+    });
+
+    const saved = await order.save();
+    res.json(saved);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

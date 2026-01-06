@@ -39,8 +39,8 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.startDate || !formData.endDate || formData.selectedInstallers.length === 0) {
-      return alert('Please select dates and at least one installer');
+    if (!formData.startDate || !formData.endDate) {
+      return alert(t('please_select_dates_installer'));
     }
 
     try {
@@ -56,7 +56,7 @@ const SchedulingModal = ({ order, onClose, onSuccess }) => {
       onClose();
     } catch (e) {
       console.error(e);
-      alert('Error scheduling job');
+      alert(t('error_scheduling_job'));
     }
   };
 

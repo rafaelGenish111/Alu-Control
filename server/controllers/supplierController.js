@@ -27,6 +27,31 @@ exports.createSupplier = async (req, res) => {
   }
 };
 
+// עדכון ספק
+exports.updateSupplier = async (req, res) => {
+  const { name, contactPerson, phone, email, leadTime, category } = req.body;
+  try {
+    const supplier = await Supplier.findById(req.params.id);
+    if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
+
+    if (name && name !== supplier.name) {
+      const exists = await Supplier.findOne({ name });
+      if (exists) return res.status(400).json({ message: 'Supplier name already exists' });
+      supplier.name = name;
+    }
+    if (contactPerson !== undefined) supplier.contactPerson = contactPerson;
+    if (phone !== undefined) supplier.phone = phone;
+    if (email !== undefined) supplier.email = email;
+    if (leadTime !== undefined) supplier.leadTime = leadTime;
+    if (category !== undefined) supplier.category = category;
+
+    const updated = await supplier.save();
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // מחיקת ספק
 exports.deleteSupplier = async (req, res) => {
   try {

@@ -51,7 +51,7 @@ const InstallationsManager = () => {
 
   const buckets = useMemo(() => {
     const readyOrders = orders.filter(o => o.status === 'ready_for_install').map((o) => ({ ...o, __type: 'order' }));
-    const scheduledOrders = orders.filter(o => o.status === 'scheduled').map((o) => ({ ...o, __type: 'order' }));
+    const scheduledOrders = orders.filter(o => o.status === 'scheduled' || o.status === 'in_progress').map((o) => ({ ...o, __type: 'order' }));
     const pendingApproval = orders.filter(o => o.status === 'pending_approval').map((o) => ({ ...o, __type: 'order' }));
 
     const readyRepairs = repairs.filter((r) => r.status === 'ready_to_schedule').map((r) => ({ ...r, __type: 'repair' }));

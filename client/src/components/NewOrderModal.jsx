@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Search, CheckCircle, Package, Hammer, Save, User, FileText, ExternalLink } from 'lucide-react';
+import { X, Plus, Trash2, Search, CheckCircle, Package, Hammer, Save, User, FileText, ExternalLink, ClipboardList } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const NewOrderModal = ({ onClose, onSuccess }) => {
@@ -31,6 +31,10 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
     // Table 2: Materials (Only Glass, Paint, Other)
     const [materials, setMaterials] = useState([]);
     const [newMaterial, setNewMaterial] = useState({ materialType: 'Glass', description: '', supplier: '', quantity: 1 });
+
+    // What to take to installation
+    const [installTakeList, setInstallTakeList] = useState([]);
+    const [newTakeItem, setNewTakeItem] = useState('');
 
     // Helpers
     const [suppliersList, setSuppliersList] = useState([]);
@@ -113,7 +117,8 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
             const created = await axios.post(`${API_URL}/orders`, {
                 ...formData,
                 products,
-                materials
+                materials,
+                installTakeList: installTakeList.map(item => ({ label: item, done: false }))
             }, config);
 
             const orderId = created?.data?._id;
@@ -371,7 +376,10 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
                             <select className="bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white"
                                 value={newMaterial.materialType} onChange={e => setNewMaterial({ ...newMaterial, materialType: e.target.value })}>
                                 <option value="Glass">{t('new_mat_glass')}</option>
+                                <option value="Aluminum">{t('new_mat_aluminum')}</option>
                                 <option value="Paint">{t('new_mat_paint')}</option>
+                                <option value="Hardware">{t('new_mat_hardware')}</option>
+                                <option value="PVC">{t('new_mat_pvc')}</option>
                                 <option value="Other">{t('new_mat_other')}</option>
                             </select>
 
@@ -404,6 +412,59 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
                                 ))}
                             </div>
                         )}
+                    </div>
+
+                    {/* What to take to installation */}
+                    <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <ClipboardList className="text-emerald-400" /> {t('what_to_take') || 'What to take to installation'}
+                            </h3>
+                        </div>
+
+                        <div className="space-y-2 mb-4">
+                            {installTakeList.map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2">
+                                    <span className="text-sm text-slate-200">{item}</span>
+                                    <button
+                                        onClick={() => setInstallTakeList(installTakeList.filter((_, i) => i !== idx))}
+                                        className="text-slate-500 hover:text-red-400"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newTakeItem}
+                                onChange={(e) => setNewTakeItem(e.target.value)}
+                                placeholder={t('add_item') || 'Add item...'}
+                                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder:text-slate-500"
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        const label = newTakeItem.trim();
+                                        if (!label) return;
+                                        setInstallTakeList([...installTakeList, label]);
+                                        setNewTakeItem('');
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const label = newTakeItem.trim();
+                                    if (!label) return;
+                                    setInstallTakeList([...installTakeList, label]);
+                                    setNewTakeItem('');
+                                }}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold inline-flex items-center gap-2"
+                            >
+                                <Plus size={16} /> {t('add')}
+                            </button>
+                        </div>
                     </div>
 
                 </div>

@@ -56,8 +56,8 @@ const Production = () => {
     const getChecklistValue = (order, key, relevant) => {
         const v = order?.productionChecklist?.[key];
         if (typeof v === 'boolean') return v;
-        // Default to not done (false) if relevant, or done (true) if not relevant
-        return relevant ? false : true;
+        // Default to not done (false) always
+        return false;
     };
 
     const updateChecklist = async (order, patch) => {
@@ -116,6 +116,7 @@ const Production = () => {
                                 <th className="p-4">{t('glass')}</th>
                                 <th className="p-4">{t('paint')}</th>
                                 <th className="p-4">{t('materials')}</th>
+                                <th className="p-4">{t('material_pending')}</th>
                                 <th className="p-4">{t('production_note')}</th>
                                 <th className="p-4">{t('actions')}</th>
                             </tr>
@@ -131,6 +132,7 @@ const Production = () => {
                                 const glassDone = getChecklistValue(order, 'glassDone', glassRelevant);
                                 const paintDone = getChecklistValue(order, 'paintDone', paintRelevant);
                                 const materialsDone = getChecklistValue(order, 'materialsDone', materialsRelevant);
+                                const materialPending = getChecklistValue(order, 'materialPending', true);
 
                                 const canReady = Boolean(glassDone && paintDone && materialsDone);
                                 const currentNote = draftNotes[order._id] ?? (order.productionNote || '');
@@ -176,6 +178,18 @@ const Production = () => {
                                                 title={materialsRelevant ? '' : 'Auto-done (not relevant)'}
                                             >
                                                 {materialsDone ? t('done') : t('not_done')}
+                                            </button>
+                                        </td>
+                                        <td className="p-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateChecklist(order, { materialPending: !materialPending })}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${materialPending
+                                                    ? 'bg-amber-600/20 text-amber-200 border-amber-700'
+                                                    : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                                                    }`}
+                                            >
+                                                {materialPending ? t('material_pending') : t('not_done')}
                                             </button>
                                         </td>
                                         <td className="p-4">

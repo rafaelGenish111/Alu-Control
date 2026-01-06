@@ -10,18 +10,21 @@ exports.scheduleInstallation = async (req, res) => {
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     // Update fields
-    order.installers = installerIds; // Array of User IDs
+    order.installers = installerIds || []; // Array of User IDs
     order.installDateStart = new Date(startDate);
     order.installDateEnd = new Date(endDate);
     order.installationNotes = notes;
 
-    // Move to 'scheduled' bucket
-    order.status = 'scheduled';
+    // Move to 'scheduled' if installers assigned, otherwise 'in_progress'
+    order.status = (installerIds && installerIds.length > 0) ? 'scheduled' : 'in_progress';
 
     // Add to timeline
+    const installerCount = installerIds ? installerIds.length : 0;
     order.timeline.push({
-      status: 'scheduled',
-      note: `Scheduled for ${new Date(startDate).toLocaleDateString()} with ${installerIds.length} installers.`
+      status: order.status,
+      note: installerCount > 0 
+        ? `Scheduled for ${new Date(startDate).toLocaleDateString()} with ${installerCount} installers.`
+        : `Scheduled for ${new Date(startDate).toLocaleDateString()} (no installers assigned yet).`
     });
 
     await order.save();
@@ -57,6 +60,49 @@ exports.approveInstallation = async (req, res) => {
       { new: true }
     );
     res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 4. Update Installers and Installation Dates (עדכון מתקינים ותאריכים בלבד)
+exports.updateInstallers = async (req, res) => {
+  const { installerIds, startDate, endDate } = req.body;
+  const userName = req.user ? req.user.name : 'System';
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (Array.isArray(installerIds)) {
+      order.installers = installerIds;
+    }
+
+    if (startDate) {
+      order.installDateStart = new Date(startDate);
+    }
+
+    if (endDate) {
+      order.installDateEnd = new Date(endDate);
+    }
+
+    // Update status if needed
+    if (order.installDateStart && order.installDateEnd) {
+      if (order.status === 'ready_for_install' || order.status === 'in_progress') {
+        order.status = order.installers && order.installers.length > 0 ? 'scheduled' : 'in_progress';
+      }
+    }
+
+    order.timeline.push({
+      status: order.status,
+      note: 'Installers and dates updated',
+      date: new Date(),
+      user: userName
+    });
+
+    const saved = await order.save();
+    await saved.populate('installers', 'name role');
+    res.json(saved);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

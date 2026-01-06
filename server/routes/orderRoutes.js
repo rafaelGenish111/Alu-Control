@@ -11,11 +11,13 @@ const {
     updateProducts,
     updateMaterials,
     updateInstallTakeList,
-    updateOrderIssue
+    updateOrderIssue,
+    updateClientDetails,
+    updateOrderGeneral
 } = require('../controllers/orderController');
 
 // Import NEW Install Controller
-const { scheduleInstallation, getInstallersList, approveInstallation } = require('../controllers/installController');
+const { scheduleInstallation, getInstallersList, approveInstallation, updateInstallers } = require('../controllers/installController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -43,12 +45,17 @@ router.get('/install/team-list', protect, getInstallersList);
 // 2. Assign team & schedule (Manager only)
 router.post('/install/schedule', protect, authorize('super_admin', 'admin', 'office'), scheduleInstallation);
 
-// 3. Final approval (Manager only)
+// 3. Update installers and dates (Manager only)
+router.put('/:id/installers', protect, authorize('super_admin', 'admin', 'office'), updateInstallers);
+
+// 4. Final approval (Manager only)
 router.post('/install/approve', protect, authorize('super_admin', 'admin'), approveInstallation);
 
 // פעולות לפי מזהה הזמנה (must stay after fixed routes)
 router.post('/', protect, authorize('super_admin', 'admin', 'office'), createOrder);
 router.put('/:id/status', protect, updateOrderStatus);
+router.put('/:id/client', protect, authorize('super_admin', 'admin', 'office'), updateClientDetails);
+router.put('/:id', protect, authorize('super_admin', 'admin', 'office'), updateOrderGeneral);
 router.put('/:id/production', protect, authorize('super_admin', 'admin', 'production'), updateProduction);
 router.put('/:id/products', protect, authorize('super_admin', 'admin', 'office'), updateProducts);
 router.put('/:id/materials', protect, authorize('super_admin', 'admin', 'office'), updateMaterials);

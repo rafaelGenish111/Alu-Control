@@ -50,7 +50,7 @@ const OrderSchema = new mongoose.Schema({
   // --- Table 2: Materials for Factory (What needs to be ordered) ---
   // e.g., "Glass 6+6", "Profile 7000", "Paint RAL 9010"
   materials: [{
-    materialType: { type: String, enum: ['Glass', 'Aluminum', 'Paint', 'Hardware', 'Other'] },
+    materialType: { type: String, enum: ['Glass', 'Aluminum', 'Paint', 'Hardware', 'Other', 'PVC'] },
     description: { type: String },
     supplier: { type: String }, // Supplier Name
     quantity: { type: Number, default: 1 },
@@ -80,7 +80,8 @@ const OrderSchema = new mongoose.Schema({
   productionChecklist: {
     glassDone: { type: Boolean },
     paintDone: { type: Boolean },
-    materialsDone: { type: Boolean }
+    materialsDone: { type: Boolean },
+    materialPending: { type: Boolean, default: false }
   },
   productionNote: { type: String, default: '' },
 
