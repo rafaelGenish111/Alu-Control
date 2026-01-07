@@ -480,7 +480,7 @@ exports.getPurchasingStatus = async (req, res) => {
       { $match: { status: { $nin: ['completed'] } } },
       { $unwind: "$materials" },
       { $match: { "materials.isOrdered": true } }, // Show only ordered items
-      { $sort: { "materials.orderedAt": -1 } },
+      { $sort: { "materials.isArrived": 1, "materials.orderedAt": -1 } }, // Sort: not arrived first, then by date
       {
         $group: {
           _id: "$materials.supplier",

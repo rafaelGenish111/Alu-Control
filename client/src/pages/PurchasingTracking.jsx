@@ -90,7 +90,15 @@ const PurchasingTracking = () => {
                         {expandedSupplier === group._id && (
                             <div className="border-t border-slate-800 bg-slate-950/30 p-4">
                                 <div className="space-y-2">
-                                    {group.items.map((item, idx) => (
+                                    {group.items
+                                        .sort((a, b) => {
+                                            // Sort: not arrived first (false before true), then by orderedAt date (newest first)
+                                            if (a.isArrived !== b.isArrived) {
+                                                return a.isArrived ? 1 : -1;
+                                            }
+                                            return new Date(b.orderedAt) - new Date(a.orderedAt);
+                                        })
+                                        .map((item, idx) => (
                                         <div key={idx} className={`flex items-center justify-between p-3 rounded-lg border ${item.isArrived ? 'bg-emerald-900/10 border-emerald-900/30' : 'bg-slate-900 border-slate-800'}`}>
 
                                             <div className="flex items-center gap-4">
