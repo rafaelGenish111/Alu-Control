@@ -404,13 +404,13 @@ const InstallerApp = () => {
                                 </div>
 
                                 {/* Installation checklist (collapsed -> modal) */}
-                                {job.__type !== 'repair' && Array.isArray(job.installTakeList) && job.installTakeList.length > 0 && (
+                                {job.__type !== 'repair' && (
                                     <button
                                         type="button"
                                         onClick={() => openTakeList(job)}
                                         className="w-full mb-4 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-2xl font-bold text-sm border border-slate-700 inline-flex items-center justify-center gap-2"
                                     >
-                                        <ClipboardList size={18} /> Installation checklist
+                                        <ClipboardList size={18} /> {t('what_to_take') || 'Installation checklist'} {Array.isArray(job.installTakeList) && job.installTakeList.length > 0 && `(${job.installTakeList.length})`}
                                     </button>
                                 )}
 

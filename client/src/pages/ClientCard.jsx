@@ -596,30 +596,36 @@ const ClientCard = () => {
             </div>
 
             <div className="space-y-2">
-              {takeListDraft.map((it, idx) => (
-                <div key={`${it.label}-${idx}`} className="flex items-center justify-between gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2">
-                  <label className="flex items-center gap-3 text-sm text-slate-200 w-full">
-                    <input
-                      type="checkbox"
-                      className="accent-emerald-500"
-                      checked={Boolean(it.done)}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
-                      }}
-                    />
-                    <span className={it.done ? 'line-through text-slate-500' : ''}>{it.label}</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setTakeListDraft((prev) => prev.filter((_, i) => i !== idx))}
-                    className="text-slate-500 hover:text-red-400"
-                    title="Remove"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+              {takeListDraft.length === 0 ? (
+                <div className="text-slate-500 text-sm py-4 text-center border border-dashed border-slate-700 rounded-xl">
+                  {t('no_items_yet') || 'No items yet. Add items below.'}
                 </div>
-              ))}
+              ) : (
+                takeListDraft.map((it, idx) => (
+                  <div key={`${it.label}-${idx}`} className="flex items-center justify-between gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2">
+                    <label className="flex items-center gap-3 text-sm text-slate-200 w-full">
+                      <input
+                        type="checkbox"
+                        className="accent-emerald-500"
+                        checked={Boolean(it.done)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
+                        }}
+                      />
+                      <span className={it.done ? 'line-through text-slate-500' : ''}>{it.label}</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setTakeListDraft((prev) => prev.filter((_, i) => i !== idx))}
+                      className="text-slate-500 hover:text-red-400"
+                      title="Remove"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="mt-4 flex gap-2">
