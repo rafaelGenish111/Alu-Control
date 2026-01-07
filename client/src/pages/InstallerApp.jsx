@@ -476,10 +476,10 @@ const InstallerApp = () => {
 
             {takeListJob && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl">
-                        <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+                    <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Installation checklist</h3>
+                                <h3 className="text-lg font-bold text-white">{t('install_checklist_title')}</h3>
                                 <p className="text-xs text-slate-400 mt-1">{takeListJob.clientName}</p>
                             </div>
                             <button type="button" onClick={closeTakeList} className="text-slate-400 hover:text-white">
@@ -487,9 +487,9 @@ const InstallerApp = () => {
                             </button>
                         </div>
 
-                        <div className="p-5 space-y-2 max-h-[60vh] overflow-y-auto">
+                        <div className="p-5 space-y-2 overflow-y-auto flex-1 min-h-0">
                             {takeListDraft.length === 0 ? (
-                                <div className="text-slate-500 text-sm">No checklist items.</div>
+                                <div className="text-slate-500 text-sm">{t('no_checklist_items')}</div>
                             ) : (
                                 takeListDraft.map((it, idx) => (
                                     <div key={`${it.label}-${idx}`} className="flex items-center gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">
@@ -522,7 +522,7 @@ const InstallerApp = () => {
                                                     type="button"
                                                     onClick={saveEditingTakeItem}
                                                     className="text-emerald-400 hover:text-emerald-300"
-                                                    title="Save"
+                                                    title={t('save')}
                                                 >
                                                     <Save size={16} />
                                                 </button>
@@ -530,7 +530,7 @@ const InstallerApp = () => {
                                                     type="button"
                                                     onClick={cancelEditingTakeItem}
                                                     className="text-slate-400 hover:text-slate-300"
-                                                    title="Cancel"
+                                                    title={t('cancel')}
                                                 >
                                                     <X size={16} />
                                                 </button>
@@ -542,7 +542,7 @@ const InstallerApp = () => {
                                                     type="button"
                                                     onClick={() => startEditingTakeItem(idx, it.label)}
                                                     className="text-blue-400 hover:text-blue-300"
-                                                    title="Edit"
+                                                    title={t('edit')}
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
@@ -550,7 +550,7 @@ const InstallerApp = () => {
                                                     type="button"
                                                     onClick={() => removeTakeListItem(idx)}
                                                     className="text-red-400 hover:text-red-300"
-                                                    title="Remove"
+                                                    title={t('remove')}
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
@@ -561,7 +561,7 @@ const InstallerApp = () => {
                             )}
                         </div>
 
-                        <div className="p-5 border-t border-slate-800">
+                        <div className="p-5 border-t border-slate-800 flex-shrink-0">
                             <div className="flex gap-2">
                                 <input
                                     type="text"
@@ -572,22 +572,22 @@ const InstallerApp = () => {
                                             addTakeListItem();
                                         }
                                     }}
-                                    placeholder="Add new item..."
+                                    placeholder={t('add_new_item')}
                                     className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder:text-slate-500"
                                 />
                                 <button
                                     type="button"
                                     onClick={addTakeListItem}
-                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold inline-flex items-center gap-2"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold inline-flex items-center gap-2 flex-shrink-0"
                                 >
-                                    <Plus size={16} /> Add
+                                    <Plus size={16} /> {t('add')}
                                 </button>
                             </div>
                         </div>
 
-                        <div className="p-5 border-t border-slate-800 flex justify-end gap-3">
+                        <div className="p-5 border-t border-slate-800 flex justify-end gap-3 flex-shrink-0">
                             <button type="button" onClick={closeTakeList} className="px-4 py-2 text-slate-400 hover:text-white">
-                                Close
+                                {t('close')}
                             </button>
                             <button
                                 type="button"
@@ -595,7 +595,7 @@ const InstallerApp = () => {
                                 disabled={savingTakeList}
                                 className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl font-bold inline-flex items-center gap-2"
                             >
-                                <Save size={18} /> {savingTakeList ? 'Saving...' : 'Save'}
+                                <Save size={18} /> {savingTakeList ? t('saving') : t('save')}
                             </button>
                         </div>
                     </div>
