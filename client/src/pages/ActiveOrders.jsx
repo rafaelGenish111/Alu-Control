@@ -90,8 +90,8 @@ const ActiveOrders = () => {
                         <tr>
                             <th className="p-4">{t('active_col_order')}</th>
                             <th className="p-4">{t('client_name')}</th>
-                            <th className="p-4">{t('address')}</th>
-                            <th className="p-4 text-center">{t('items')}</th>
+                            <th className="p-4">{t('region')}</th>
+                            <th className="p-4 text-center">{t('work_days')}</th>
                             <th className="p-4">{t('status')}</th>
                         </tr>
                     </thead>
@@ -99,12 +99,6 @@ const ActiveOrders = () => {
                         {loading ? (<tr><td colSpan="5" className="p-8 text-center">{t('loading')}</td></tr>) :
                             orders.length === 0 ? (<tr><td colSpan="5" className="p-8 text-center text-slate-500">{t('no_open_orders')}</td></tr>) :
                                 orders.map((order) => {
-                                    const itemCount = Array.isArray(order.products)
-                                        ? order.products.length
-                                        : Array.isArray(order.items)
-                                            ? order.items.length
-                                            : 0;
-
                                     const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
 
                                     return (
@@ -115,10 +109,10 @@ const ActiveOrders = () => {
                                         >
                                             <td className="p-4 font-mono text-blue-400">#{displayOrderNumber}</td>
                                             <td className="p-4 font-bold text-white">{order.clientName}</td>
-                                            <td className="p-4">{order.clientAddress}</td>
+                                            <td className="p-4">{order.region || order.clientAddress}</td>
                                             <td className="p-4 text-center">
                                                 <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700">
-                                                    {itemCount}
+                                                    {order.estimatedInstallationDays || 1}
                                                 </span>
                                             </td>
                                             <td className="p-4">

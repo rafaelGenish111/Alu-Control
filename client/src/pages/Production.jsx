@@ -1,11 +1,13 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Hammer, CheckCircle, Save } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const Production = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [draftNotes, setDraftNotes] = useState({});
@@ -138,7 +140,17 @@ const Production = () => {
                                 const currentNote = draftNotes[order._id] ?? (order.productionNote || '');
 
                                 return (
-                                    <tr key={order._id} className="hover:bg-slate-800/30 transition">
+                                    <tr 
+                                        key={order._id} 
+                                        onClick={(e) => {
+                                            // Don't navigate if clicking on a button or input
+                                            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {
+                                                return;
+                                            }
+                                            navigate(`/orders/${order._id}`);
+                                        }}
+                                        className="hover:bg-slate-800/30 transition cursor-pointer"
+                                    >
                                         <td className="p-4 font-mono text-amber-400">#{displayOrderNumber}</td>
                                         <td className="p-4 font-semibold text-white">{order.clientName}</td>
                                         <td className="p-4">

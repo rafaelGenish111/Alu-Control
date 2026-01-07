@@ -213,7 +213,16 @@ const InstallationsManager = () => {
                 return (
                   <tr
                     key={order._id}
-                    className={`transition ${rowDanger ? 'bg-red-950/30 hover:bg-red-950/40' : 'hover:bg-slate-800/30'}`}
+                    onClick={(e) => {
+                      // Only navigate for orders, not repairs
+                      if (isRepair) return;
+                      // Don't navigate if clicking on a button
+                      if (e.target.tagName === 'BUTTON') {
+                        return;
+                      }
+                      navigate(`/orders/${order._id}`);
+                    }}
+                    className={`transition ${rowDanger ? 'bg-red-950/30 hover:bg-red-950/40' : 'hover:bg-slate-800/30'} ${!isRepair ? 'cursor-pointer' : ''}`}
                   >
                     <td className="p-4 font-mono text-blue-400">
                       <div className="flex items-center gap-2">

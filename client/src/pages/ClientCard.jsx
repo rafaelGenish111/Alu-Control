@@ -1043,7 +1043,7 @@ const ClientCard = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-2">{t('assign_team')}</label>
+                  <label className="text-xs text-slate-400 block mb-2">{t('installer_name')}</label>
                   <div className="bg-slate-800 border border-slate-600 rounded-xl p-2 max-h-40 overflow-y-auto">
                     {installersList.map(worker => (
                       <div key={worker._id}
@@ -1097,13 +1097,18 @@ const ClientCard = () => {
                 )}
                 {order.installers && order.installers.length > 0 && (
                   <div className="text-sm text-slate-300">
-                    <span className="text-slate-400">{t('assign_team')}:</span>
+                    <span className="text-slate-400">{t('installer_name')}:</span>
                     <div className="mt-1 space-y-1">
-                      {order.installers.map((inst, idx) => (
-                        <div key={idx} className="text-slate-200">
-                          {typeof inst === 'string' ? inst : inst.name}
-                        </div>
-                      ))}
+                      {order.installers.map((inst, idx) => {
+                        const installerId = typeof inst === 'string' ? inst : inst._id || inst;
+                        const installer = installersList.find(i => i._id === installerId);
+                        const installerName = installer ? installer.name : (typeof inst === 'object' && inst.name ? inst.name : installerId);
+                        return (
+                          <div key={idx} className="text-slate-200">
+                            {installerName}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

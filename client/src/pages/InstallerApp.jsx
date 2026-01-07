@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText, ClipboardList, X, Save, Menu, Calendar, User } from 'lucide-react';
+import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText, ClipboardList, X, Save, Menu, Calendar, User, Trash2, Edit2, Plus } from 'lucide-react';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
 import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
@@ -19,6 +19,9 @@ const InstallerApp = () => {
     const [takeListJob, setTakeListJob] = useState(null);
     const [takeListDraft, setTakeListDraft] = useState([]);
     const [savingTakeList, setSavingTakeList] = useState(false);
+    const [newTakeListItem, setNewTakeListItem] = useState('');
+    const [editingTakeItemIndex, setEditingTakeItemIndex] = useState(null);
+    const [editingTakeItemText, setEditingTakeItemText] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
 
@@ -150,12 +153,49 @@ const InstallerApp = () => {
         const list = Array.isArray(job.installTakeList) ? job.installTakeList : [];
         setTakeListJob(job);
         setTakeListDraft(list);
+        setNewTakeListItem('');
+        setEditingTakeItemIndex(null);
+        setEditingTakeItemText('');
     };
 
     const closeTakeList = () => {
         setTakeListJob(null);
         setTakeListDraft([]);
         setSavingTakeList(false);
+        setNewTakeListItem('');
+        setEditingTakeItemIndex(null);
+        setEditingTakeItemText('');
+    };
+
+    const startEditingTakeItem = (index, currentText) => {
+        setEditingTakeItemIndex(index);
+        setEditingTakeItemText(currentText);
+    };
+
+    const saveEditingTakeItem = () => {
+        if (editingTakeItemIndex !== null && editingTakeItemText.trim()) {
+            const updated = [...takeListDraft];
+            updated[editingTakeItemIndex] = { ...updated[editingTakeItemIndex], label: editingTakeItemText.trim() };
+            setTakeListDraft(updated);
+            setEditingTakeItemIndex(null);
+            setEditingTakeItemText('');
+        }
+    };
+
+    const cancelEditingTakeItem = () => {
+        setEditingTakeItemIndex(null);
+        setEditingTakeItemText('');
+    };
+
+    const addTakeListItem = () => {
+        if (newTakeListItem.trim()) {
+            setTakeListDraft([...takeListDraft, { label: newTakeListItem.trim(), done: false }]);
+            setNewTakeListItem('');
+        }
+    };
+
+    const removeTakeListItem = (index) => {
+        setTakeListDraft(takeListDraft.filter((_, i) => i !== index));
     };
 
     const saveTakeList = async () => {
@@ -452,7 +492,7 @@ const InstallerApp = () => {
                                 <div className="text-slate-500 text-sm">No checklist items.</div>
                             ) : (
                                 takeListDraft.map((it, idx) => (
-                                    <label key={`${it.label}-${idx}`} className="flex items-center gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">
+                                    <div key={`${it.label}-${idx}`} className="flex items-center gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">
                                         <input
                                             type="checkbox"
                                             className="accent-emerald-500"
@@ -462,10 +502,87 @@ const InstallerApp = () => {
                                                 setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
                                             }}
                                         />
-                                        <span className={it.done ? 'line-through text-slate-500' : ''}>{it.label}</span>
-                                    </label>
+                                        {editingTakeItemIndex === idx ? (
+                                            <div className="flex-1 flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={editingTakeItemText}
+                                                    onChange={(e) => setEditingTakeItemText(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            saveEditingTakeItem();
+                                                        } else if (e.key === 'Escape') {
+                                                            cancelEditingTakeItem();
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={saveEditingTakeItem}
+                                                    className="text-emerald-400 hover:text-emerald-300"
+                                                    title="Save"
+                                                >
+                                                    <Save size={16} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={cancelEditingTakeItem}
+                                                    className="text-slate-400 hover:text-slate-300"
+                                                    title="Cancel"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <span className={`flex-1 ${it.done ? 'line-through text-slate-500' : ''}`}>{it.label}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => startEditingTakeItem(idx, it.label)}
+                                                    className="text-blue-400 hover:text-blue-300"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeTakeListItem(idx)}
+                                                    className="text-red-400 hover:text-red-300"
+                                                    title="Remove"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 ))
                             )}
+                        </div>
+
+                        <div className="p-5 border-t border-slate-800">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newTakeListItem}
+                                    onChange={(e) => setNewTakeListItem(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            addTakeListItem();
+                                        }
+                                    }}
+                                    placeholder="Add new item..."
+                                    className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder:text-slate-500"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={addTakeListItem}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold inline-flex items-center gap-2"
+                                >
+                                    <Plus size={16} /> Add
+                                </button>
+                            </div>
                         </div>
 
                         <div className="p-5 border-t border-slate-800 flex justify-end gap-3">

@@ -187,11 +187,11 @@ const OrderApprovals = () => {
                     onChange={(e) => setForm((p) => ({ ...p, isPaid: e.target.checked }))}
                     className="accent-emerald-500"
                   />
-                  <span className="inline-flex items-center gap-2">{t('fin_customer_paid')}</span>
+                  <span className="inline-flex items-center gap-2">{t('amount_paid')}</span>
                 </label>
 
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">{t('amount_paid')}</label>
+                  <label className="text-xs text-slate-400 block mb-1">{t('fin_customer_paid')}</label>
                   <input
                     type="number"
                     className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
