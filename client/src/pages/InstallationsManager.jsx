@@ -70,11 +70,22 @@ const InstallationsManager = () => {
 
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((o) => {
-      const num = String(o.manualOrderNumber || o.orderNumber || o._id || '').toLowerCase();
-      const name = String(o.clientName || '').toLowerCase();
-      return num.includes(q) || name.includes(q);
+    let result = rows;
+    
+    // Filter by query if provided
+    if (q) {
+      result = rows.filter((o) => {
+        const num = String(o.manualOrderNumber || o.orderNumber || o._id || '').toLowerCase();
+        const name = String(o.clientName || '').toLowerCase();
+        return num.includes(q) || name.includes(q);
+      });
+    }
+    
+    // Sort by date: earliest first (null/undefined dates go to the end)
+    return result.sort((a, b) => {
+      const dateA = a.installDateStart ? new Date(a.installDateStart).getTime() : Infinity;
+      const dateB = b.installDateStart ? new Date(b.installDateStart).getTime() : Infinity;
+      return dateA - dateB; // Ascending order (earliest first)
     });
   }, [query, rows]);
 

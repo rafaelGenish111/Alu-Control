@@ -2,8 +2,9 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Hammer, CheckCircle, Save } from 'lucide-react';
+import { Hammer, CheckCircle, Save, FileText } from 'lucide-react';
 import { API_URL } from '../config/api';
+import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const Production = () => {
     const { t } = useTranslation();
@@ -12,6 +13,7 @@ const Production = () => {
     const [loading, setLoading] = useState(true);
     const [draftNotes, setDraftNotes] = useState({});
     const [savingId, setSavingId] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState('');
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const token = user?.token;
     const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -226,9 +228,23 @@ const Production = () => {
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-wrap gap-2">
+                                                {order.files && order.files.find((f) => f.type === 'master_plan') && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const masterPlan = order.files.find((f) => f.type === 'master_plan');
+                                                            if (masterPlan) setPreviewUrl(masterPlan.url);
+                                                        }}
+                                                        className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                                                    >
+                                                        <FileText size={14} /> {t('plan')}
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         if (!canReady) {
                                                             alert(t('please_mark_all_done'));
                                                             return;
@@ -250,6 +266,14 @@ const Production = () => {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {previewUrl && (
+                <MasterPlanPreviewModal
+                    url={previewUrl}
+                    title={t('master_plan')}
+                    onClose={() => setPreviewUrl('')}
+                />
             )}
         </div>
     );

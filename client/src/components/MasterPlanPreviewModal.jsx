@@ -130,7 +130,7 @@ const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 bg-black/40 relative flex flex-col">
+        <div className="flex-1 bg-black/40 relative flex flex-col min-h-0">
           
           {loading && previewState !== 'google-docs' && (
             <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/50">
@@ -150,14 +150,19 @@ const MasterPlanPreviewModal = ({ url, title = 'Master plan', onClose }) => {
 
           {/* Viewer: Image / PDF-Image */}
           {(previewState === 'image' || previewState === 'pdf-preview') && displayUrl && (
-            <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-4 min-h-0">
+              <div className="flex items-center justify-center">
                 <img 
-                src={displayUrl} 
-                alt="Preview" 
-                className={`max-w-full max-h-full object-contain shadow-lg transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
+                  src={displayUrl} 
+                  alt="Preview" 
+                  className={`shadow-lg transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+                  style={{ 
+                    display: 'block'
+                  }}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
                 />
+              </div>
             </div>
           )}
 
