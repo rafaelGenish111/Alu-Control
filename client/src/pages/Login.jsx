@@ -17,6 +17,12 @@ const Login = () => {
     e.preventDefault();
     setError(''); // reset previous errors
 
+    // Validate inputs before sending
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
 
@@ -32,11 +38,16 @@ const Login = () => {
 
     } catch (err) {
       console.error("Login Error:", err);
+      console.error("Error response:", err.response?.data);
       // distinguish between network error and invalid credentials
       if (err.code === "ERR_NETWORK") {
         setError('Network error: server is not reachable or the URL is wrong');
+      } else if (err.response?.status === 400) {
+        setError(err.response?.data?.message || 'Invalid request. Please check your email and password.');
+      } else if (err.response?.status === 401) {
+        setError('Invalid email or password');
       } else {
-        setError('Login failed. Please check your email and password.');
+        setError(err.response?.data?.message || 'Login failed. Please check your email and password.');
       }
     }
   };

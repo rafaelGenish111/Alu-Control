@@ -44,6 +44,11 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order Number already exists' });
     }
 
+    // Validate required fields (clientPhone is optional)
+    if (!clientName || !manualOrderNumber) {
+      return res.status(400).json({ message: 'Manual order number and client name are required' });
+    }
+
     // Calculate initial production status (Traffic Light) based on materials
     const prodStatus = {
       glass: materials.some(m => m.materialType === 'Glass') ? 'pending' : 'not_needed',
