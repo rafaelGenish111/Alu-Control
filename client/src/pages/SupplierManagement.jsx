@@ -80,7 +80,7 @@ const SupplierManagement = () => {
   };
 
   // Client-side guard (server also enforces)
-  if (!['super_admin', 'admin'].includes(user?.role)) {
+  if (!['super_admin', 'admin', 'office'].includes(user?.role)) {
     return <div className="text-white p-8">Access denied.</div>;
   }
 

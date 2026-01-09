@@ -49,7 +49,7 @@ router.post('/install/schedule', protect, authorize('super_admin', 'admin', 'off
 router.put('/:id/installers', protect, authorize('super_admin', 'admin', 'office'), updateInstallers);
 
 // 4. Final approval (Manager only)
-router.post('/install/approve', protect, authorize('super_admin', 'admin'), approveInstallation);
+router.post('/install/approve', protect, authorize('super_admin', 'admin', 'office'), approveInstallation);
 
 // פעולות לפי מזהה הזמנה (must stay after fixed routes)
 router.post('/', protect, authorize('super_admin', 'admin', 'office'), createOrder);

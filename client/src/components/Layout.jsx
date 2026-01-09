@@ -53,7 +53,7 @@ const Layout = () => {
       label: t('sidebar_production'),
       path: '/production',
       icon: <Factory size={20} />,
-      roles: ['super_admin', 'admin', 'production']
+      roles: ['super_admin', 'admin', 'office', 'production']
     },
     {
       label: t('sidebar_scheduling'),
@@ -83,7 +83,7 @@ const Layout = () => {
       label: t('sidebar_users'),
       path: '/admin',
       icon: <Shield size={20} />,
-      roles: ['super_admin', 'admin']
+      roles: ['super_admin', 'admin', 'office']
     },
     {
       label: t('sidebar_customers'),
@@ -95,13 +95,13 @@ const Layout = () => {
       label: t('sidebar_suppliers'),
       path: '/admin/suppliers',
       icon: <ShoppingCart size={20} />,
-      roles: ['super_admin', 'admin']
+      roles: ['super_admin', 'admin', 'office']
     },
     {
       label: t('sidebar_installer_app'),
       path: '/installer',
       icon: <Smartphone size={20} />,
-      roles: ['super_admin', 'admin', 'installer']
+      roles: ['super_admin', 'admin', 'office', 'installer']
     },
   ];
 
