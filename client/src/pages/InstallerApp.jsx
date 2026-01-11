@@ -63,6 +63,14 @@ const InstallerApp = () => {
         return d >= today && d < end;
     }, [range]);
 
+    const isOverdue = useCallback((job) => {
+        if (!job.installDateStart) return false;
+        const now = new Date();
+        const deadline = job.installDateEnd ? new Date(job.installDateEnd) : new Date(job.installDateStart);
+        if (Number.isNaN(deadline.getTime())) return false;
+        return deadline.getTime() < now.getTime();
+    }, []);
+
     const fetchJobs = useCallback(async () => {
         setLoading(true);
         try {
@@ -74,7 +82,7 @@ const InstallerApp = () => {
             const myOrderJobs = ordersRes.data
                 .filter((o) => ['scheduled', 'install'].includes(o.status)) // keep legacy
                 .filter(isAssignedToMe)
-                .filter((o) => inRange(o.installDateStart))
+                .filter((o) => !o.installDateStart || inRange(o.installDateStart) || isOverdue({ ...o, installDateEnd: o.installDateEnd }))
                 .map((o) => ({ ...o, __type: 'order' }));
 
             const myRepairJobs = repairsRes.data
@@ -83,7 +91,7 @@ const InstallerApp = () => {
                     const installers = Array.isArray(r.installers) ? r.installers : [];
                     return installers.some((inst) => String(inst) === String(user?._id));
                 })
-                .filter((r) => inRange(r.installDateStart))
+                .filter((r) => !r.installDateStart || inRange(r.installDateStart) || isOverdue({ ...r, installDateEnd: r.installDateEnd }))
                 .map((r) => ({ ...r, __type: 'repair' }));
 
             setJobs([...myOrderJobs, ...myRepairJobs]);
@@ -92,7 +100,7 @@ const InstallerApp = () => {
             console.error("Error fetching jobs:", error);
             setLoading(false);
         }
-    }, [config, inRange, isAssignedToMe, user?._id]);
+    }, [config, inRange, isAssignedToMe, isOverdue, user?._id]);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchJobs(); }, [fetchJobs]);
@@ -110,10 +118,11 @@ const InstallerApp = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            const isVideo = file.type.startsWith('video/');
             if (job.__type === 'repair') {
                 await axios.post(`${API_URL}/repairs/${job._id}/media`, {
                     url: uploadRes.data.url,
-                    type: 'photo',
+                    type: isVideo ? 'video' : 'photo',
                     name: file.name || 'Installation proof'
                 }, config);
             } else {
@@ -354,9 +363,10 @@ const InstallerApp = () => {
                     {jobs.map(job => {
                         // Check for Master Plan
                         const masterPlan = job.files && job.files.find(f => f.type === 'master_plan');
+                        const overdue = isOverdue(job);
 
                         return (
-                            <div key={job._id} className="bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-800 relative overflow-hidden">
+                            <div key={job._id} className={`bg-slate-900 rounded-3xl p-6 shadow-xl border relative overflow-hidden ${overdue ? 'border-red-600 bg-red-950/20' : 'border-slate-800'}`}>
 
                                 {/* --- MASTER PLAN BANNER (THE NEW PART) --- */}
                                 {masterPlan && (
@@ -370,8 +380,8 @@ const InstallerApp = () => {
                                     </button>
                                 )}
 
-                                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl">
-                                    {range.toUpperCase()}
+                                <div className={`absolute top-0 right-0 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl ${overdue ? 'bg-red-600' : 'bg-blue-600'}`}>
+                                    {overdue ? 'OVERDUE' : range.toUpperCase()}
                                 </div>
 
                                 <h3 className="text-xl font-bold text-white mb-1 pr-12">{job.clientName}</h3>
@@ -433,7 +443,7 @@ const InstallerApp = () => {
                                         ) : (
                                             <span className="flex items-center justify-center gap-2"><Camera /> {t('upload_proof')}</span>
                                         )}
-                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileUpload(e, job)} />
+                                        <input type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={(e) => handleFileUpload(e, job)} />
                                     </label>
 
                                     <button

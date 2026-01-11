@@ -16,11 +16,16 @@ const storage = new CloudinaryStorage({
       format = 'pdf';
     }
 
+    // זיהוי סוג המשאב - image או video
+    let resourceType = 'image';
+    if (file.mimetype.startsWith('video/')) {
+      resourceType = 'video';
+    }
+
     return {
       folder: 'glass_dynamic_uploads',
       format: format,
-      // השינוי הקריטי: שים לב לשורה הזו!
-      resource_type: 'image' 
+      resource_type: resourceType
     };
   },
 });

@@ -18,6 +18,10 @@ const resources = {
       "sidebar_suppliers": "Suppliers Management",
       "sidebar_installer_app": "Installer App",
       "sidebar_repair": "Repair",
+      "global_search_placeholder": "Search orders...",
+      "global_search_results": "Search Results",
+      "global_search_no_results": "No orders found",
+      "global_search_loading": "Searching...",
 
       // --- Active Orders Page ---
       "active_add_new": "+ New Order",
@@ -261,6 +265,7 @@ const resources = {
       "user_updated_success": "User updated successfully!",
       "error": "Error",
       "repairs": "Repairs",
+      "no_order_number": "No order number",
       "new_repair_ticket": "New repair ticket",
       "create_repair_ticket": "Create a repair ticket by order number.",
       "order_found_suggestion": "Order found",
@@ -661,6 +666,7 @@ const resources = {
       "user_updated_success": "¡Usuario actualizado exitosamente!",
       "error": "Error",
       "repairs": "Arreglos",
+      "no_order_number": "Sin número de pedido",
       "new_repair_ticket": "Nuevo ticket de arreglo",
       "create_repair_ticket": "Crear un ticket de arreglo por número de presupuesto.",
       "order_found_suggestion": "Presupuesto encontrado",

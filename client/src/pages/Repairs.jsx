@@ -30,6 +30,9 @@ const Repairs = () => {
   const [selected, setSelected] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [mediaUploading, setMediaUploading] = useState(false);
+  const [editingOrderNumber, setEditingOrderNumber] = useState(false);
+  const [orderNumberValue, setOrderNumberValue] = useState('');
+  const [updatingOrderNumber, setUpdatingOrderNumber] = useState(false);
 
   const [scheduleRepair, setScheduleRepair] = useState(null);
 
@@ -79,8 +82,8 @@ const Repairs = () => {
   };
 
   const createRepair = async () => {
-    if (!createForm.manualOrderNumber.trim() || !createForm.problem.trim() || !createForm.clientName.trim()) {
-      alert(`${t('order_col')}, ${t('client_name')} and ${t('problem').toLowerCase()} are required`);
+    if (!createForm.problem.trim() || !createForm.clientName.trim()) {
+      alert(`${t('client_name')} and ${t('problem').toLowerCase()} are required`);
       return;
     }
     try {
@@ -167,6 +170,26 @@ const Repairs = () => {
     } catch (e) {
       console.error(e);
       alert(t('error') + ': ' + t('notes').toLowerCase());
+    }
+  };
+
+  const updateOrderNumber = async () => {
+    if (!selected) return;
+    setUpdatingOrderNumber(true);
+    try {
+      await axios.put(`${API_URL}/repairs/${selected._id}`, {
+        manualOrderNumber: orderNumberValue.trim() || null
+      }, config);
+      const refreshed = await axios.get(`${API_URL}/repairs/${selected._id}`, config);
+      setSelected(refreshed.data);
+      setEditingOrderNumber(false);
+      setOrderNumberValue('');
+      fetchRepairs();
+    } catch (e) {
+      console.error(e);
+      alert(t('error') + ': ' + t('order_col').toLowerCase());
+    } finally {
+      setUpdatingOrderNumber(false);
     }
   };
 
@@ -284,7 +307,7 @@ const Repairs = () => {
                     className={`cursor-pointer transition ${hasIssue ? 'bg-red-950/30 hover:bg-red-950/40' : 'hover:bg-slate-800/30'}`}
                     onClick={() => setSelected(r)}
                   >
-                    <td className="p-4 font-mono text-amber-300">#{r.manualOrderNumber}</td>
+                    <td className="p-4 font-mono text-amber-300">{r.manualOrderNumber ? `#${r.manualOrderNumber}` : '—'}</td>
                     <td className="p-4 font-semibold text-white">{r.clientName}</td>
                     <td className="p-4">{r.contactedAt ? new Date(r.contactedAt).toLocaleDateString() : '—'}</td>
                     <td className="p-4 truncate max-w-[420px]">{r.problem}</td>
@@ -357,15 +380,19 @@ const Repairs = () => {
 
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">{t('order_col')}</label>
+                <label className="text-xs text-slate-400 block mb-1">{t('order_col')} ({t('optional')})</label>
                 <input
                   value={createForm.manualOrderNumber}
                   onChange={(e) => {
                     setCreateForm((p) => ({ ...p, manualOrderNumber: e.target.value }));
-                    lookupOrder(e.target.value);
+                    if (e.target.value.trim()) {
+                      lookupOrder(e.target.value);
+                    } else {
+                      setOrderSuggestion(null);
+                    }
                   }}
                   className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                  placeholder="e.g. 2024-100"
+                  placeholder="e.g. 2024-100 (optional)"
                 />
                 {orderSuggestion && (
                   <div className="mt-2 p-2 bg-blue-900/20 border border-blue-700/50 rounded-lg text-xs text-blue-200">
@@ -532,12 +559,68 @@ const Repairs = () => {
             <div className="p-5 border-b border-slate-800 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-white">{t('repair_ticket')}</h3>
-                <p className="text-xs text-slate-400 mt-1">#{selected.manualOrderNumber} · {selected.clientName}</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {selected.manualOrderNumber ? `#${selected.manualOrderNumber}` : t('no_order_number')} · {selected.clientName}
+                </p>
               </div>
-              <button type="button" onClick={() => setSelected(null)} className="text-slate-400 hover:text-white"><X /></button>
+              <button type="button" onClick={() => {
+                setSelected(null);
+                setEditingOrderNumber(false);
+                setOrderNumberValue('');
+              }} className="text-slate-400 hover:text-white"><X /></button>
             </div>
 
             <div className="p-5 space-y-5">
+              <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-slate-400">{t('order_col')}</div>
+                  {!editingOrderNumber && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingOrderNumber(true);
+                        setOrderNumberValue(selected.manualOrderNumber || '');
+                      }}
+                      className="text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      {selected.manualOrderNumber ? t('edit') : t('add')}
+                    </button>
+                  )}
+                </div>
+                {editingOrderNumber ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={orderNumberValue}
+                      onChange={(e) => setOrderNumberValue(e.target.value)}
+                      className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      placeholder="e.g. 2024-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={updateOrderNumber}
+                      disabled={updatingOrderNumber}
+                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                    >
+                      {updatingOrderNumber ? t('saving') : t('save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingOrderNumber(false);
+                        setOrderNumberValue('');
+                      }}
+                      className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-white font-medium mt-1">
+                    {selected.manualOrderNumber || t('no_order_number')}
+                  </div>
+                )}
+              </div>
               <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
                 <div className="text-xs text-slate-400">{t('problem')}</div>
                 <div className="text-white font-medium mt-1">{selected.problem}</div>

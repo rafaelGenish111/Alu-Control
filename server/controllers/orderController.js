@@ -12,6 +12,31 @@ exports.getOrders = async (req, res) => {
   }
 };
 
+// 1.1. Search orders globally (for global search)
+exports.searchOrders = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) {
+      return res.json([]);
+    }
+    
+    const query = String(q).trim();
+    const searchFilter = {
+      $or: [
+        { manualOrderNumber: { $regex: query, $options: 'i' } },
+        { clientName: { $regex: query, $options: 'i' } },
+        { clientPhone: { $regex: query, $options: 'i' } },
+        { region: { $regex: query, $options: 'i' } }
+      ]
+    };
+    
+    const orders = await Order.find(searchFilter).sort({ createdAt: -1 }).limit(50);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // 2. Get Single Order by ID
 exports.getOrderById = async (req, res) => {
   try {

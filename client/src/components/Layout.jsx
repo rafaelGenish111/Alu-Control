@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Clock, Truck, Calendar as CalendarIcon, CheckCircle, Wrench } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Clock, Truck, Calendar as CalendarIcon, CheckCircle, Wrench, Search } from 'lucide-react';
+import axios from 'axios';
+import { API_URL } from '../config/api';
 
 const Layout = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('userInfo'));
+  const token = user?.token;
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
   const currentLang = (i18n.language || 'en').startsWith('es') ? 'es' : 'en';
   const toggleLanguage = () => {
@@ -22,6 +30,37 @@ const Layout = () => {
     localStorage.removeItem('userInfo');
     navigate('/login');
   };
+
+  const performSearch = useCallback(async (query) => {
+    if (!query || !query.trim()) {
+      setSearchResults([]);
+      setShowSearchModal(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const res = await axios.get(`${API_URL}/orders/search`, {
+        ...config,
+        params: { q: query.trim() }
+      });
+      setSearchResults(res.data || []);
+      setShowSearchModal(true);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [config]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      performSearch(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, performSearch]);
 
   const menuItems = [
     {
@@ -141,6 +180,25 @@ const Layout = () => {
           <p className="text-sm text-slate-400">{t('hello')} {user?.name}</p>
         </div>
 
+        {/* Global Search */}
+        <div className="px-4 pb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => {
+                if (searchQuery && searchResults.length > 0) {
+                  setShowSearchModal(true);
+                }
+              }}
+              placeholder={t('global_search_placeholder')}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+        </div>
+
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           {menuItems.map((item) => {
             if (item.roles[0] !== 'all' && !item.roles.includes(user?.role)) return null;
@@ -182,6 +240,72 @@ const Layout = () => {
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         ></div>
+      )}
+
+      {/* Search Results Modal */}
+      {showSearchModal && searchQuery && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 md:pl-[16rem] pt-20 md:pt-8">
+          <div className="bg-slate-900 w-full max-w-2xl rounded-2xl border border-slate-700 shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-white">{t('global_search_results')}</h3>
+                <p className="text-xs text-slate-400 mt-1">{searchResults.length} {t('active_col_order').toLowerCase()}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSearchModal(false);
+                  setSearchQuery('');
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {isSearching ? (
+                <div className="p-8 text-center text-slate-400">{t('global_search_loading')}</div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">{t('global_search_no_results')}</div>
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {searchResults.map((order) => {
+                    const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
+                    return (
+                      <button
+                        key={order._id}
+                        type="button"
+                        onClick={() => {
+                          navigate(`/orders/${order._id}`);
+                          setShowSearchModal(false);
+                          setSearchQuery('');
+                          setIsSidebarOpen(false);
+                        }}
+                        className="w-full p-4 text-left hover:bg-slate-800/50 transition"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-mono text-blue-400 text-sm mb-1">#{displayOrderNumber}</div>
+                            <div className="font-semibold text-white">{order.clientName}</div>
+                            <div className="text-xs text-slate-400 mt-1">
+                              {order.region && <span>{order.region} • </span>}
+                              {order.clientPhone && <span>{order.clientPhone}</span>}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <span className="text-xs px-2 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">
+                              {order.status || '—'}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <main className="flex-1 overflow-auto p-4 md:p-8 pt-20 md:pt-8 w-full">

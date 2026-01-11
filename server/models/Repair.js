@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const RepairSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
-  manualOrderNumber: { type: String, required: true },
+  manualOrderNumber: { type: String, required: false },
 
   clientName: { type: String, required: true },
   clientPhone: { type: String },

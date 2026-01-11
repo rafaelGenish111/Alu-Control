@@ -12,9 +12,9 @@ const upload = multer({
       console.log('File filter - Original name:', file.originalname);
       console.log('File filter - MIME type:', file.mimetype);
       
-      // Accept images and PDFs - be more lenient
-      const allowedMimeTypes = /^(image\/(jpeg|jpg|png|gif|webp|bmp|svg)|application\/pdf)$/i;
-      const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|bmp|svg|pdf)$/i;
+      // Accept images, videos and PDFs - be more lenient
+      const allowedMimeTypes = /^(image\/(jpeg|jpg|png|gif|webp|bmp|svg)|video\/(mp4|mov|avi|quicktime|webm|mkv)|application\/pdf)$/i;
+      const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|bmp|svg|pdf|mp4|mov|avi|webm|mkv)$/i;
       
       const extname = allowedExtensions.test(file.originalname);
       const mimetype = allowedMimeTypes.test(file.mimetype);
@@ -26,7 +26,7 @@ const upload = multer({
         return cb(null, true);
       } else {
         console.log('File filter - Rejected:', file.originalname);
-        cb(new Error('Only image files and PDFs are allowed!'));
+        cb(new Error('Only image files, videos and PDFs are allowed!'));
       }
     } catch (error) {
       console.error('File filter error:', error);

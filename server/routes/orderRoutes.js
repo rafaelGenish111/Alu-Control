@@ -13,7 +13,8 @@ const {
     updateInstallTakeList,
     updateOrderIssue,
     updateClientDetails,
-    updateOrderGeneral
+    updateOrderGeneral,
+    searchOrders
 } = require('../controllers/orderController');
 
 // Import NEW Install Controller
@@ -24,6 +25,9 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 // --- Existing Routes ---
 // חשוב: ראוטים עם path קבוע (כמו /batching) חייבים לבוא לפני ראוטים פרמטריים (/:id)
 router.get('/', protect, getOrders);
+
+// Global search (must come before /:id)
+router.get('/search', protect, searchOrders);
 
 // Batching & Clients (paths קבועים)
 router.get('/clients/search', protect, searchClients);

@@ -6,9 +6,6 @@ exports.createRepair = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    if (!manualOrderNumber || !String(manualOrderNumber).trim()) {
-      return res.status(400).json({ message: 'Order number is required' });
-    }
     if (!problem || !String(problem).trim()) {
       return res.status(400).json({ message: 'Problem is required' });
     }
@@ -21,11 +18,12 @@ exports.createRepair = async (req, res) => {
       return res.status(400).json({ message: 'Invalid contactedAt date' });
     }
 
-    const order = await Order.findOne({ manualOrderNumber: String(manualOrderNumber).trim() });
+    const orderNumberStr = manualOrderNumber ? String(manualOrderNumber).trim() : null;
+    const order = orderNumberStr ? await Order.findOne({ manualOrderNumber: orderNumberStr }) : null;
     
     const repair = new Repair({
       orderId: order ? order._id : null,
-      manualOrderNumber: String(manualOrderNumber).trim(),
+      manualOrderNumber: orderNumberStr || null,
       clientName: String(clientName).trim(),
       clientPhone: clientPhone ? String(clientPhone).trim() : '',
       clientAddress: clientAddress ? String(clientAddress).trim() : '',
@@ -83,7 +81,7 @@ exports.updateRepair = async (req, res) => {
     const repair = await Repair.findById(req.params.id);
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
-    const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote } = req.body;
+    const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, manualOrderNumber } = req.body;
 
     if (typeof problem === 'string') repair.problem = problem.trim();
     if (typeof warrantyStatus === 'string') {
@@ -97,6 +95,13 @@ exports.updateRepair = async (req, res) => {
     if (typeof estimatedWorkDays !== 'undefined') {
       const n = Number(estimatedWorkDays);
       if (Number.isFinite(n)) repair.estimatedWorkDays = n;
+    }
+    if (typeof manualOrderNumber !== 'undefined') {
+      const orderNumberStr = manualOrderNumber ? String(manualOrderNumber).trim() : null;
+      repair.manualOrderNumber = orderNumberStr || null;
+      // Try to find matching order
+      const order = orderNumberStr ? await Order.findOne({ manualOrderNumber: orderNumberStr }) : null;
+      repair.orderId = order ? order._id : null;
     }
 
     repair.notes.push({ text: 'Repair updated', createdAt: new Date(), createdBy: userName });
