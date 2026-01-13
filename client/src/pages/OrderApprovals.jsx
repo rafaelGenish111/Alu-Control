@@ -96,7 +96,16 @@ const OrderApprovals = () => {
                 const masterPlan = o.files && o.files.find((f) => f.type === 'master_plan');
                 return (
                   <tr key={o._id} className="hover:bg-slate-800/30 transition">
-                    <td className="p-4 font-mono text-blue-400">#{displayOrderNumber}</td>
+                    <td className="p-4 font-mono text-blue-400">
+                      #{displayOrderNumber}
+                      {(o.notes && o.notes.length > 0) && (
+                        <div className="text-xs text-slate-400 mt-1">
+                          {o.notes.filter(n => n.stage === 'approval').length > 0 
+                            ? o.notes.filter(n => n.stage === 'approval')[o.notes.filter(n => n.stage === 'approval').length - 1]?.text
+                            : o.notes[o.notes.length - 1]?.text}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4 font-semibold text-white">{o.clientName}</td>
                     <td className="p-4">{o.region || '—'}</td>
                     <td className="p-4">
@@ -123,7 +132,7 @@ const OrderApprovals = () => {
                           onClick={() => openModal(o)}
                           className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
                         >
-                          {t('review')}
+                          {t('estado')}
                         </button>
                         <button
                           type="button"

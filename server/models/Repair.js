@@ -22,11 +22,16 @@ const RepairSchema = new mongoose.Schema({
   },
 
   estimatedWorkDays: { type: Number, default: 1 },
+  hora: { type: String }, // Hour for scheduling (e.g., "14:30")
 
   installers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   installDateStart: { type: Date },
   installDateEnd: { type: Date },
   schedulingNotes: { type: String, default: '' },
+  installTakeList: [{
+    label: { type: String, required: true },
+    done: { type: Boolean, default: false }
+  }],
 
   issue: {
     isIssue: { type: Boolean, default: false },

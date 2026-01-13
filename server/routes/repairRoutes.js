@@ -11,7 +11,8 @@ const {
   approveRepair,
   scheduleRepair,
   closeRepair,
-  updateRepairIssue
+  updateRepairIssue,
+  updateRepairTakeList
 } = require('../controllers/repairController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -30,6 +31,7 @@ router.post('/:id/schedule', protect, authorize('super_admin', 'admin', 'office'
 router.post('/:id/close', protect, authorize('super_admin', 'admin', 'office'), closeRepair);
 
 router.put('/:id/issue', protect, authorize('super_admin', 'admin', 'office'), updateRepairIssue);
+router.put('/:id/install-take-list', protect, authorize('super_admin', 'admin', 'office', 'installer'), updateRepairTakeList);
 
 module.exports = router;
 

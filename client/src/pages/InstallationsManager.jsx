@@ -94,10 +94,19 @@ const InstallationsManager = () => {
     if (order.status !== 'scheduled') return false;
     const end = order.installDateEnd ? new Date(order.installDateEnd) : null;
     const start = order.installDateStart ? new Date(order.installDateStart) : null;
-    const now = new Date();
     const deadline = end && !Number.isNaN(end.getTime()) ? end : start;
     if (!deadline || Number.isNaN(deadline.getTime())) return false;
-    return deadline.getTime() < now.getTime();
+    
+    // Get start of today (midnight)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get start of deadline day (midnight)
+    const deadlineDay = new Date(deadline);
+    deadlineDay.setHours(0, 0, 0, 0);
+    
+    // Only overdue if deadline day is before today (not same day)
+    return deadlineDay.getTime() < today.getTime();
   }, []);
 
   const markIssue = async (order) => {
@@ -246,12 +255,17 @@ const InstallationsManager = () => {
                         {(hasIssue || overdue) && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-900/40 bg-red-900/20 text-red-200">
                             <AlertTriangle size={12} />
-                            {hasIssue ? 'ISSUE' : 'OVERDUE'}
+                            {hasIssue ? 'ISSUE' : t('overdue').toUpperCase()}
                           </span>
                         )}
                       </div>
                       {hasIssue && order.issue?.reason && (
                         <div className="text-xs text-red-200/80 mt-1">{t('sched_issue_reason')}: {order.issue.reason}</div>
+                      )}
+                      {(order.schedulingNotes || (order.notes && order.notes.length > 0)) && (
+                        <div className="text-xs text-slate-400 mt-1">
+                          {order.schedulingNotes || (order.notes && order.notes.length > 0 && order.notes[order.notes.length - 1]?.text)}
+                        </div>
                       )}
                     </td>
                     <td className="p-4 font-semibold text-white">{order.clientName}</td>

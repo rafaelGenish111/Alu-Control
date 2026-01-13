@@ -100,15 +100,19 @@ const CalendarView = () => {
 
             const repairEvents = relevantRepairs
                 .filter((r) => r.installDateStart && r.installDateEnd)
-                .map((r) => ({
-                    id: r._id,
-                    type: 'repair',
-                    title: `REPAIR: ${r.clientName} (${r.manualOrderNumber})`,
-                    start: new Date(r.installDateStart),
-                    end: new Date(r.installDateEnd),
-                    resource: { ...r, __type: 'repair' },
-                    allDay: true
-                }));
+                .map((r) => {
+                    const horaText = r.hora ? ` - ${r.hora}` : '';
+                    const orderNumber = r.manualOrderNumber || '';
+                    return {
+                        id: r._id,
+                        type: 'repair',
+                        title: `Arreglo: ${r.clientName}${orderNumber ? ` (${orderNumber})` : ''}${horaText}`,
+                        start: new Date(r.installDateStart),
+                        end: new Date(r.installDateEnd),
+                        resource: { ...r, __type: 'repair' },
+                        allDay: true
+                    };
+                });
 
             setEvents([...calendarEvents, ...repairEvents]);
         } catch (e) {

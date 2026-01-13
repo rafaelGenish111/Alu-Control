@@ -234,6 +234,7 @@ const resources = {
       "invoice": "Invoice",
       "payment": "Payment",
       "review": "Review",
+      "estado": "Estado",
       "approve_order": "Approve order",
       "invoice_issued": "Invoice issued",
       "invoice_number": "Invoice number",
@@ -380,6 +381,7 @@ const resources = {
       "material_pending": "Material Pending",
       "add_product": "Add Product",
       "add_material": "Add Material",
+      "overdue": "Overdue",
 
       // --- Calendar ---
       "calendar": "Calendar",
@@ -635,6 +637,7 @@ const resources = {
       "invoice": "Factura",
       "payment": "Pagos",
       "review": "Revisar",
+      "estado": "Estado",
       "approve_order": "Facturación",
       "invoice_issued": "Facturado",
       "invoice_number": "Nº Factura",
@@ -781,6 +784,7 @@ const resources = {
       "material_pending": "Por llegar",
       "add_product": "Añadir Producto",
       "add_material": "Añadir Material",
+      "overdue": "No terminado",
 
       // --- Calendar ---
       "calendar": "Calendario",

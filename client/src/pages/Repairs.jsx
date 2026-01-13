@@ -19,7 +19,7 @@ const Repairs = () => {
     clientAddress: '',
     contactedAt: '',
     problem: '',
-    estimatedWorkDays: 1,
+    hora: '',
     warrantyStatus: 'in_warranty',
     paymentNote: ''
   });
@@ -33,6 +33,9 @@ const Repairs = () => {
   const [editingOrderNumber, setEditingOrderNumber] = useState(false);
   const [orderNumberValue, setOrderNumberValue] = useState('');
   const [updatingOrderNumber, setUpdatingOrderNumber] = useState(false);
+  const [editingField, setEditingField] = useState(null);
+  const [editValues, setEditValues] = useState({});
+  const [updatingDetails, setUpdatingDetails] = useState(false);
 
   const [scheduleRepair, setScheduleRepair] = useState(null);
 
@@ -97,7 +100,7 @@ const Repairs = () => {
         region: createForm.region || '',
         contactedAt,
         problem: createForm.problem.trim(),
-        estimatedWorkDays: Number(createForm.estimatedWorkDays) || 1,
+        hora: createForm.hora || null,
         warrantyStatus: createForm.warrantyStatus,
         paymentNote: createForm.paymentNote
       }, config);
@@ -127,7 +130,7 @@ const Repairs = () => {
       }
 
       setCreateOpen(false);
-      setCreateForm({ manualOrderNumber: '', clientName: '', clientPhone: '', clientAddress: '', contactedAt: '', problem: '', estimatedWorkDays: 1, warrantyStatus: 'in_warranty', paymentNote: '' });
+      setCreateForm({ manualOrderNumber: '', clientName: '', clientPhone: '', clientAddress: '', contactedAt: '', problem: '', hora: '', warrantyStatus: 'in_warranty', paymentNote: '' });
       setCreateFiles([]);
       setOrderSuggestion(null);
       setCreating(false);
@@ -443,13 +446,12 @@ const Repairs = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">{t('work_days_label')}</label>
+                  <label className="text-xs text-slate-400 block mb-1">Hora</label>
                   <input
-                    type="number"
-                    value={createForm.estimatedWorkDays}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, estimatedWorkDays: e.target.value }))}
+                    type="time"
+                    value={createForm.hora}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, hora: e.target.value }))}
                     className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                    min="1"
                   />
                 </div>
               </div>
@@ -567,6 +569,8 @@ const Repairs = () => {
                 setSelected(null);
                 setEditingOrderNumber(false);
                 setOrderNumberValue('');
+                setEditingField(null);
+                setEditValues({});
               }} className="text-slate-400 hover:text-white"><X /></button>
             </div>
 
@@ -622,15 +626,264 @@ const Repairs = () => {
                 )}
               </div>
               <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                <div className="text-xs text-slate-400">{t('problem')}</div>
-                <div className="text-white font-medium mt-1">{selected.problem}</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-slate-400">{t('problem')}</div>
+                  {editingField !== 'problem' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingField('problem');
+                        setEditValues({ problem: selected.problem });
+                      }}
+                      className="text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      {t('edit')}
+                    </button>
+                  )}
+                </div>
+                {editingField === 'problem' ? (
+                  <div className="flex gap-2">
+                    <textarea
+                      value={editValues.problem || ''}
+                      onChange={(e) => setEditValues({ ...editValues, problem: e.target.value })}
+                      className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      rows="3"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => updateRepairDetails('problem', editValues.problem)}
+                      disabled={updatingDetails}
+                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                    >
+                      {updatingDetails ? t('saving') : t('save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingField(null);
+                        setEditValues({});
+                      }}
+                      className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-white font-medium mt-1">{selected.problem}</div>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="text-xs text-slate-400">{t('warranty')}</div>
-                  <div className="text-white font-medium mt-1">
-                    {selected.warrantyStatus === 'out_of_warranty' ? t('out_of_warranty') : t('in_warranty')}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-slate-400">{t('phone')}</div>
+                    {editingField !== 'clientPhone' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField('clientPhone');
+                          setEditValues({ clientPhone: selected.clientPhone || '' });
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        {t('edit')}
+                      </button>
+                    )}
                   </div>
+                  {editingField === 'clientPhone' ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editValues.clientPhone || ''}
+                        onChange={(e) => setEditValues({ ...editValues, clientPhone: e.target.value })}
+                        className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateRepairDetails('clientPhone', editValues.clientPhone)}
+                        disabled={updatingDetails}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                      >
+                        {updatingDetails ? t('saving') : t('save')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField(null);
+                          setEditValues({});
+                        }}
+                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
+                      >
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-white font-medium mt-1">{selected.clientPhone || '—'}</div>
+                  )}
+                </div>
+                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-slate-400">{t('address')}</div>
+                    {editingField !== 'clientAddress' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField('clientAddress');
+                          setEditValues({ clientAddress: selected.clientAddress || '' });
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        {t('edit')}
+                      </button>
+                    )}
+                  </div>
+                  {editingField === 'clientAddress' ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editValues.clientAddress || ''}
+                        onChange={(e) => setEditValues({ ...editValues, clientAddress: e.target.value })}
+                        className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateRepairDetails('clientAddress', editValues.clientAddress)}
+                        disabled={updatingDetails}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                      >
+                        {updatingDetails ? t('saving') : t('save')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField(null);
+                          setEditValues({});
+                        }}
+                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
+                      >
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-white font-medium mt-1">{selected.clientAddress || '—'}</div>
+                  )}
+                </div>
+                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                  <div className="text-xs text-slate-400">{t('contacted_date')}</div>
+                  <div className="text-white font-medium mt-1">{selected.contactedAt ? new Date(selected.contactedAt).toLocaleDateString() : '—'}</div>
+                </div>
+                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-slate-400">Hora</div>
+                    {editingField !== 'hora' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField('hora');
+                          setEditValues({ hora: selected.hora || '' });
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        {t('edit')}
+                      </button>
+                    )}
+                  </div>
+                  {editingField === 'hora' ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="time"
+                        value={editValues.hora || ''}
+                        onChange={(e) => setEditValues({ ...editValues, hora: e.target.value })}
+                        className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateRepairDetails('hora', editValues.hora)}
+                        disabled={updatingDetails}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                      >
+                        {updatingDetails ? t('saving') : t('save')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField(null);
+                          setEditValues({});
+                        }}
+                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
+                      >
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-white font-medium mt-1">{selected.hora || '—'}</div>
+                  )}
+                </div>
+                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-slate-400">{t('warranty')}</div>
+                    {editingField !== 'warrantyStatus' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField('warrantyStatus');
+                          setEditValues({ warrantyStatus: selected.warrantyStatus });
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        {t('edit')}
+                      </button>
+                    )}
+                  </div>
+                  {editingField === 'warrantyStatus' ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditValues({ ...editValues, warrantyStatus: 'in_warranty' })}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition ${editValues.warrantyStatus === 'in_warranty'
+                            ? 'bg-emerald-600/20 text-emerald-200 border-emerald-700'
+                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                            }`}
+                        >
+                          {t('in_warranty')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditValues({ ...editValues, warrantyStatus: 'out_of_warranty' })}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition ${editValues.warrantyStatus === 'out_of_warranty'
+                            ? 'bg-amber-600/20 text-amber-200 border-amber-700'
+                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                            }`}
+                        >
+                          {t('out_of_warranty')}
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateRepairDetails('warrantyStatus', editValues.warrantyStatus)}
+                          disabled={updatingDetails}
+                          className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                        >
+                          {updatingDetails ? t('saving') : t('save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingField(null);
+                            setEditValues({});
+                          }}
+                          className="flex-1 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
+                        >
+                          {t('cancel')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-white font-medium mt-1">
+                      {selected.warrantyStatus === 'out_of_warranty' ? t('out_of_warranty') : t('in_warranty')}
+                    </div>
+                  )}
                 </div>
                 <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
                   <div className="text-xs text-slate-400">{t('payment_note')}</div>

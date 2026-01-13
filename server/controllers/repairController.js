@@ -2,7 +2,7 @@ const Repair = require('../models/Repair');
 const Order = require('../models/Order');
 
 exports.createRepair = async (req, res) => {
-  const { manualOrderNumber, contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, clientName, clientPhone, clientAddress, region } = req.body;
+  const { manualOrderNumber, contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, clientName, clientPhone, clientAddress, region, hora } = req.body;
   const userName = req.user ? req.user.name : 'System';
 
   try {
@@ -33,6 +33,7 @@ exports.createRepair = async (req, res) => {
       warrantyStatus: warrantyStatus === 'out_of_warranty' ? 'out_of_warranty' : 'in_warranty',
       paymentNote: typeof paymentNote === 'string' ? paymentNote.trim() : '',
       estimatedWorkDays: Number.isFinite(Number(estimatedWorkDays)) ? Number(estimatedWorkDays) : 1,
+      hora: typeof hora === 'string' ? hora.trim() : null,
       status: 'open',
       notes: [{ text: 'Repair ticket created', createdAt: new Date(), createdBy: userName }]
     });
@@ -81,13 +82,17 @@ exports.updateRepair = async (req, res) => {
     const repair = await Repair.findById(req.params.id);
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
-    const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, manualOrderNumber } = req.body;
+    const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, manualOrderNumber, clientPhone, clientAddress, hora } = req.body;
 
     if (typeof problem === 'string') repair.problem = problem.trim();
     if (typeof warrantyStatus === 'string') {
       repair.warrantyStatus = warrantyStatus === 'out_of_warranty' ? 'out_of_warranty' : 'in_warranty';
     }
     if (typeof paymentNote === 'string') repair.paymentNote = paymentNote.trim();
+    if (typeof clientPhone === 'string') repair.clientPhone = clientPhone.trim();
+    if (typeof clientAddress === 'string') repair.clientAddress = clientAddress.trim();
+    if (typeof hora === 'string') repair.hora = hora.trim();
+    if (typeof hora === 'undefined' || hora === null) repair.hora = null;
     if (contactedAt) {
       const dt = new Date(contactedAt);
       if (!Number.isNaN(dt.getTime())) repair.contactedAt = dt;
@@ -236,6 +241,29 @@ exports.updateRepairIssue = async (req, res) => {
     } else {
       repair.issue = { ...(repair.issue || {}), isIssue: false, resolvedAt: new Date() };
       repair.notes.push({ text: 'Issue resolved', createdAt: new Date(), createdBy: userName });
+    }
+
+    const saved = await repair.save();
+    res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateRepairTakeList = async (req, res) => {
+  const { installTakeList } = req.body;
+  const userName = req.user ? req.user.name : 'System';
+
+  try {
+    const repair = await Repair.findById(req.params.id);
+    if (!repair) return res.status(404).json({ message: 'Repair not found' });
+
+    if (Array.isArray(installTakeList)) {
+      repair.installTakeList = installTakeList.map(item => ({
+        label: typeof item.label === 'string' ? item.label.trim() : String(item.label || ''),
+        done: Boolean(item.done)
+      }));
+      repair.notes.push({ text: 'Install take list updated', createdAt: new Date(), createdBy: userName });
     }
 
     const saved = await repair.save();
