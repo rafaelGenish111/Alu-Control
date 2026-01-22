@@ -6,6 +6,8 @@ const resources = {
     translation: {
       // --- Sidebar (Main Toolbar) ---
       "sidebar_dashboard": "Dashboard",
+      "hello": "Hello",
+      "dashboard_welcome": "Welcome to your dashboard",
       "sidebar_active_orders": "Active Orders",
       "sidebar_pending_items": "Pending Items",
       "sidebar_purchasing": "Purchasing",
@@ -423,6 +425,8 @@ const resources = {
     translation: {
       // --- Sidebar (Main Toolbar) ---
       "sidebar_dashboard": "Panel de Control",
+      "hello": "Hola",
+      "dashboard_welcome": "Bienvenido a tu panel de control",
       "sidebar_active_orders": "Trabajos en curso",
       "sidebar_pending_items": "Compras", //
       "sidebar_purchasing": "Compras pendientes de recibir", //

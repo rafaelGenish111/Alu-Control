@@ -158,6 +158,14 @@ const Dashboard = () => {
 
     return (
         <div className="flex flex-col gap-6">
+            {/* Welcome Header */}
+            <div className="mb-2">
+                <h1 className="text-3xl font-bold text-white">
+                    {t('hello') || 'Hello'} {user?.name || 'User'}!
+                </h1>
+                <p className="text-slate-400 mt-1">{t('dashboard_welcome') || 'Welcome to your dashboard'}</p>
+            </div>
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
