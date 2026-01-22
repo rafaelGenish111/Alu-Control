@@ -19,7 +19,7 @@ const Repairs = () => {
     clientAddress: '',
     contactedAt: '',
     problem: '',
-    hora: '',
+    estimatedWorkDays: 1,
     warrantyStatus: 'in_warranty',
     paymentNote: ''
   });
@@ -30,16 +30,6 @@ const Repairs = () => {
   const [selected, setSelected] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [mediaUploading, setMediaUploading] = useState(false);
-  const [editingOrderNumber, setEditingOrderNumber] = useState(false);
-  const [orderNumberValue, setOrderNumberValue] = useState('');
-  const [updatingOrderNumber, setUpdatingOrderNumber] = useState(false);
-  const [editingField, setEditingField] = useState(null);
-  const [editValues, setEditValues] = useState({});
-  const [updatingDetails, setUpdatingDetails] = useState(false);
-  const [editingInstallers, setEditingInstallers] = useState(false);
-  const [installersList, setInstallersList] = useState([]);
-  const [installersDraft, setInstallersDraft] = useState([]);
-  const [savingInstallers, setSavingInstallers] = useState(false);
 
   const [scheduleRepair, setScheduleRepair] = useState(null);
 
@@ -63,27 +53,6 @@ const Repairs = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRepairs();
   }, [fetchRepairs]);
-
-  useEffect(() => {
-    const fetchInstallers = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/orders/install/team-list`, config);
-        setInstallersList(res.data);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    fetchInstallers();
-  }, [config]);
-
-  useEffect(() => {
-    if (selected && editingInstallers) {
-      const installerIds = Array.isArray(selected.installers) 
-        ? selected.installers.map(i => typeof i === 'string' ? i : i._id || i)
-        : [];
-      setInstallersDraft(installerIds);
-    }
-  }, [selected, editingInstallers]);
 
   const lookupOrder = async (orderNumber) => {
     if (!orderNumber || orderNumber.trim().length === 0) {
@@ -110,8 +79,8 @@ const Repairs = () => {
   };
 
   const createRepair = async () => {
-    if (!createForm.problem.trim() || !createForm.clientName.trim()) {
-      alert(`${t('client_name')} and ${t('problem').toLowerCase()} are required`);
+    if (!createForm.manualOrderNumber.trim() || !createForm.problem.trim() || !createForm.clientName.trim()) {
+      alert(`${t('order_col')}, ${t('client_name')} and ${t('problem').toLowerCase()} are required`);
       return;
     }
     try {
@@ -125,7 +94,7 @@ const Repairs = () => {
         region: createForm.region || '',
         contactedAt,
         problem: createForm.problem.trim(),
-        hora: createForm.hora || null,
+        estimatedWorkDays: Number(createForm.estimatedWorkDays) || 1,
         warrantyStatus: createForm.warrantyStatus,
         paymentNote: createForm.paymentNote
       }, config);
@@ -155,7 +124,7 @@ const Repairs = () => {
       }
 
       setCreateOpen(false);
-      setCreateForm({ manualOrderNumber: '', clientName: '', clientPhone: '', clientAddress: '', contactedAt: '', problem: '', hora: '', warrantyStatus: 'in_warranty', paymentNote: '' });
+      setCreateForm({ manualOrderNumber: '', clientName: '', clientPhone: '', clientAddress: '', contactedAt: '', problem: '', estimatedWorkDays: 1, warrantyStatus: 'in_warranty', paymentNote: '' });
       setCreateFiles([]);
       setOrderSuggestion(null);
       setCreating(false);
@@ -198,51 +167,6 @@ const Repairs = () => {
     } catch (e) {
       console.error(e);
       alert(t('error') + ': ' + t('notes').toLowerCase());
-    }
-  };
-
-  const updateOrderNumber = async () => {
-    if (!selected) return;
-    setUpdatingOrderNumber(true);
-    try {
-      await axios.put(`${API_URL}/repairs/${selected._id}`, {
-        manualOrderNumber: orderNumberValue.trim() || null
-      }, config);
-      const refreshed = await axios.get(`${API_URL}/repairs/${selected._id}`, config);
-      setSelected(refreshed.data);
-      setEditingOrderNumber(false);
-      setOrderNumberValue('');
-      fetchRepairs();
-    } catch (e) {
-      console.error(e);
-      alert(t('error') + ': ' + t('order_col').toLowerCase());
-    } finally {
-      setUpdatingOrderNumber(false);
-    }
-  };
-
-  const updateRepairDetails = async (field, value) => {
-    if (!selected) return;
-    setUpdatingDetails(true);
-    try {
-      const updateData = {};
-      if (field === 'problem') updateData.problem = value;
-      else if (field === 'warrantyStatus') updateData.warrantyStatus = value;
-      else if (field === 'clientPhone') updateData.clientPhone = value;
-      else if (field === 'clientAddress') updateData.clientAddress = value;
-      else if (field === 'hora') updateData.hora = value || null;
-
-      await axios.put(`${API_URL}/repairs/${selected._id}`, updateData, config);
-      const refreshed = await axios.get(`${API_URL}/repairs/${selected._id}`, config);
-      setSelected(refreshed.data);
-      setEditingField(null);
-      setEditValues({});
-      fetchRepairs();
-    } catch (e) {
-      console.error(e);
-      alert(t('error') + ': ' + t('error_updating_status'));
-    } finally {
-      setUpdatingDetails(false);
     }
   };
 
@@ -360,7 +284,7 @@ const Repairs = () => {
                     className={`cursor-pointer transition ${hasIssue ? 'bg-red-950/30 hover:bg-red-950/40' : 'hover:bg-slate-800/30'}`}
                     onClick={() => setSelected(r)}
                   >
-                    <td className="p-4 font-mono text-amber-300">{r.manualOrderNumber ? `#${r.manualOrderNumber}` : '—'}</td>
+                    <td className="p-4 font-mono text-amber-300">#{r.manualOrderNumber}</td>
                     <td className="p-4 font-semibold text-white">{r.clientName}</td>
                     <td className="p-4">{r.contactedAt ? new Date(r.contactedAt).toLocaleDateString() : '—'}</td>
                     <td className="p-4 truncate max-w-[420px]">{r.problem}</td>
@@ -433,19 +357,15 @@ const Repairs = () => {
 
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">{t('order_col')} ({t('optional')})</label>
+                <label className="text-xs text-slate-400 block mb-1">{t('order_col')}</label>
                 <input
                   value={createForm.manualOrderNumber}
                   onChange={(e) => {
                     setCreateForm((p) => ({ ...p, manualOrderNumber: e.target.value }));
-                    if (e.target.value.trim()) {
-                      lookupOrder(e.target.value);
-                    } else {
-                      setOrderSuggestion(null);
-                    }
+                    lookupOrder(e.target.value);
                   }}
                   className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
-                  placeholder="e.g. 2024-100 (optional)"
+                  placeholder="e.g. 2024-100"
                 />
                 {orderSuggestion && (
                   <div className="mt-2 p-2 bg-blue-900/20 border border-blue-700/50 rounded-lg text-xs text-blue-200">
@@ -496,12 +416,13 @@ const Repairs = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Hora</label>
+                  <label className="text-xs text-slate-400 block mb-1">{t('work_days_label')}</label>
                   <input
-                    type="time"
-                    value={createForm.hora}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, hora: e.target.value }))}
+                    type="number"
+                    value={createForm.estimatedWorkDays}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, estimatedWorkDays: e.target.value }))}
                     className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white"
+                    min="1"
                   />
                 </div>
               </div>
@@ -611,414 +532,26 @@ const Repairs = () => {
             <div className="p-5 border-b border-slate-800 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-white">{t('repair_ticket')}</h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  {selected.manualOrderNumber ? `#${selected.manualOrderNumber}` : t('no_order_number')} · {selected.clientName}
-                </p>
+                <p className="text-xs text-slate-400 mt-1">#{selected.manualOrderNumber} · {selected.clientName}</p>
               </div>
-              <button type="button" onClick={() => {
-                setSelected(null);
-                setEditingOrderNumber(false);
-                setOrderNumberValue('');
-                setEditingField(null);
-                setEditValues({});
-                setEditingInstallers(false);
-                setInstallersDraft([]);
-              }} className="text-slate-400 hover:text-white"><X /></button>
+              <button type="button" onClick={() => setSelected(null)} className="text-slate-400 hover:text-white"><X /></button>
             </div>
 
             <div className="p-5 space-y-5">
               <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-slate-400">{t('order_col')}</div>
-                  {!editingOrderNumber && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingOrderNumber(true);
-                        setOrderNumberValue(selected.manualOrderNumber || '');
-                      }}
-                      className="text-xs text-blue-400 hover:text-blue-300"
-                    >
-                      {selected.manualOrderNumber ? t('edit') : t('add')}
-                    </button>
-                  )}
-                </div>
-                {editingOrderNumber ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={orderNumberValue}
-                      onChange={(e) => setOrderNumberValue(e.target.value)}
-                      className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
-                      placeholder="e.g. 2024-100"
-                    />
-                    <button
-                      type="button"
-                      onClick={updateOrderNumber}
-                      disabled={updatingOrderNumber}
-                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
-                    >
-                      {updatingOrderNumber ? t('saving') : t('save')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingOrderNumber(false);
-                        setOrderNumberValue('');
-                      }}
-                      className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
-                    >
-                      {t('cancel')}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-white font-medium mt-1">
-                    {selected.manualOrderNumber || t('no_order_number')}
-                  </div>
-                )}
-              </div>
-              <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-slate-400">{t('problem')}</div>
-                  {editingField !== 'problem' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingField('problem');
-                        setEditValues({ problem: selected.problem });
-                      }}
-                      className="text-xs text-blue-400 hover:text-blue-300"
-                    >
-                      {t('edit')}
-                    </button>
-                  )}
-                </div>
-                {editingField === 'problem' ? (
-                  <div className="flex gap-2">
-                    <textarea
-                      value={editValues.problem || ''}
-                      onChange={(e) => setEditValues({ ...editValues, problem: e.target.value })}
-                      className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
-                      rows="3"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updateRepairDetails('problem', editValues.problem)}
-                      disabled={updatingDetails}
-                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
-                    >
-                      {updatingDetails ? t('saving') : t('save')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingField(null);
-                        setEditValues({});
-                      }}
-                      className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
-                    >
-                      {t('cancel')}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-white font-medium mt-1">{selected.problem}</div>
-                )}
+                <div className="text-xs text-slate-400">{t('problem')}</div>
+                <div className="text-white font-medium mt-1">{selected.problem}</div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs text-slate-400">{t('phone')}</div>
-                    {editingField !== 'clientPhone' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingField('clientPhone');
-                          setEditValues({ clientPhone: selected.clientPhone || '' });
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        {t('edit')}
-                      </button>
-                    )}
+                  <div className="text-xs text-slate-400">{t('warranty')}</div>
+                  <div className="text-white font-medium mt-1">
+                    {selected.warrantyStatus === 'out_of_warranty' ? t('out_of_warranty') : t('in_warranty')}
                   </div>
-                  {editingField === 'clientPhone' ? (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={editValues.clientPhone || ''}
-                        onChange={(e) => setEditValues({ ...editValues, clientPhone: e.target.value })}
-                        className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => updateRepairDetails('clientPhone', editValues.clientPhone)}
-                        disabled={updatingDetails}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
-                      >
-                        {updatingDetails ? t('saving') : t('save')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingField(null);
-                          setEditValues({});
-                        }}
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-white font-medium mt-1">{selected.clientPhone || '—'}</div>
-                  )}
-                </div>
-                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs text-slate-400">{t('address')}</div>
-                    {editingField !== 'clientAddress' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingField('clientAddress');
-                          setEditValues({ clientAddress: selected.clientAddress || '' });
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        {t('edit')}
-                      </button>
-                    )}
-                  </div>
-                  {editingField === 'clientAddress' ? (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={editValues.clientAddress || ''}
-                        onChange={(e) => setEditValues({ ...editValues, clientAddress: e.target.value })}
-                        className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => updateRepairDetails('clientAddress', editValues.clientAddress)}
-                        disabled={updatingDetails}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
-                      >
-                        {updatingDetails ? t('saving') : t('save')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingField(null);
-                          setEditValues({});
-                        }}
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-white font-medium mt-1">{selected.clientAddress || '—'}</div>
-                  )}
-                </div>
-                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="text-xs text-slate-400">{t('contacted_date')}</div>
-                  <div className="text-white font-medium mt-1">{selected.contactedAt ? new Date(selected.contactedAt).toLocaleDateString() : '—'}</div>
-                </div>
-                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs text-slate-400">Hora</div>
-                    {editingField !== 'hora' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingField('hora');
-                          setEditValues({ hora: selected.hora || '' });
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        {t('edit')}
-                      </button>
-                    )}
-                  </div>
-                  {editingField === 'hora' ? (
-                    <div className="flex gap-2">
-                      <input
-                        type="time"
-                        value={editValues.hora || ''}
-                        onChange={(e) => setEditValues({ ...editValues, hora: e.target.value })}
-                        className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => updateRepairDetails('hora', editValues.hora)}
-                        disabled={updatingDetails}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
-                      >
-                        {updatingDetails ? t('saving') : t('save')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingField(null);
-                          setEditValues({});
-                        }}
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-white font-medium mt-1">{selected.hora || '—'}</div>
-                  )}
-                </div>
-                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs text-slate-400">{t('warranty')}</div>
-                    {editingField !== 'warrantyStatus' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingField('warrantyStatus');
-                          setEditValues({ warrantyStatus: selected.warrantyStatus });
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        {t('edit')}
-                      </button>
-                    )}
-                  </div>
-                  {editingField === 'warrantyStatus' ? (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditValues({ ...editValues, warrantyStatus: 'in_warranty' })}
-                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition ${editValues.warrantyStatus === 'in_warranty'
-                            ? 'bg-emerald-600/20 text-emerald-200 border-emerald-700'
-                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
-                            }`}
-                        >
-                          {t('in_warranty')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditValues({ ...editValues, warrantyStatus: 'out_of_warranty' })}
-                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition ${editValues.warrantyStatus === 'out_of_warranty'
-                            ? 'bg-amber-600/20 text-amber-200 border-amber-700'
-                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
-                            }`}
-                        >
-                          {t('out_of_warranty')}
-                        </button>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => updateRepairDetails('warrantyStatus', editValues.warrantyStatus)}
-                          disabled={updatingDetails}
-                          className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
-                        >
-                          {updatingDetails ? t('saving') : t('save')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingField(null);
-                            setEditValues({});
-                          }}
-                          className="flex-1 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
-                        >
-                          {t('cancel')}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-white font-medium mt-1">
-                      {selected.warrantyStatus === 'out_of_warranty' ? t('out_of_warranty') : t('in_warranty')}
-                    </div>
-                  )}
                 </div>
                 <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
                   <div className="text-xs text-slate-400">{t('payment_note')}</div>
                   <div className="text-white font-medium mt-1">{selected.paymentNote || '—'}</div>
-                </div>
-                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs text-slate-400">{t('assign_team') || 'Installers'}</div>
-                    {!editingInstallers && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const installerIds = Array.isArray(selected.installers) 
-                            ? selected.installers.map(i => typeof i === 'string' ? i : i._id || i)
-                            : [];
-                          setInstallersDraft(installerIds);
-                          setEditingInstallers(true);
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        {t('edit')}
-                      </button>
-                    )}
-                  </div>
-                  {editingInstallers ? (
-                    <div className="space-y-2">
-                      <div className="bg-slate-800 border border-slate-600 rounded-xl p-2 max-h-40 overflow-y-auto">
-                        {installersList.map((worker) => (
-                          <div
-                            key={worker._id}
-                            onClick={() => toggleInstaller(worker._id)}
-                            className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${installersDraft.includes(worker._id)
-                              ? 'bg-blue-600/20 border border-blue-500/50'
-                              : 'hover:bg-slate-700'
-                              }`}
-                          >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${installersDraft.includes(worker._id)
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'border-slate-500'
-                              }`}>
-                              {installersDraft.includes(worker._id) && <div className="w-2 h-2 bg-white rounded-full" />}
-                            </div>
-                            <span className="text-sm text-white">{worker.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={saveInstallers}
-                          disabled={savingInstallers}
-                          className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
-                        >
-                          {savingInstallers ? t('saving') : t('save')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingInstallers(false);
-                            setInstallersDraft([]);
-                          }}
-                          className="flex-1 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
-                        >
-                          {t('cancel')}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-white font-medium mt-1">
-                      {selected.installers && selected.installers.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {selected.installers.map((inst, idx) => {
-                            const installer = installersList.find(i => i._id === (typeof inst === 'string' ? inst : inst._id));
-                            return installer ? (
-                              <span key={idx} className="px-2 py-1 bg-blue-600/20 text-blue-300 rounded text-xs">
-                                {installer.name}
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      ) : '—'}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -1146,6 +679,5 @@ const Repairs = () => {
 };
 
 export default Repairs;
-
 
 

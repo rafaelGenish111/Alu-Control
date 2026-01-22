@@ -2,10 +2,10 @@ const Order = require('../models/Order');
 
 // --- CRM & ORDER MANAGEMENT ---
 
-// 1. Get all orders (sorted by newest)
+// 1. Get all orders (sorted by newest) - exclude soft-deleted orders
 exports.getOrders = async (req, res) => {
   try {
-    const orders = await Order.find({}).sort({ createdAt: -1 });
+    const orders = await Order.find({ $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }] }).sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
