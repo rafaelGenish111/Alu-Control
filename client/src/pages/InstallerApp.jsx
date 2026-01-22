@@ -147,14 +147,21 @@ const InstallerApp = () => {
         if (!window.confirm(t('finish_job') + '?')) return;
         try {
             if (job.__type === 'repair') {
-                await axios.post(`${API_URL}/repairs/${job._id}/close`, {}, config);
+                const response = await axios.post(`${API_URL}/repairs/${job._id}/close`, {}, config);
+                if (response.data && response.data.status) {
+                    // Success
+                }
             } else {
-                await axios.put(`${API_URL}/orders/${job._id}/status`, { status: 'pending_approval' }, config); // Move to pending approval
+                const response = await axios.put(`${API_URL}/orders/${job._id}/status`, { status: 'pending_approval' }, config);
+                if (response.data && response.data.status) {
+                    // Success
+                }
             }
             fetchJobs();
         } catch (e) {
-            console.error(e);
-            alert('Error');
+            console.error('Error finishing job:', e);
+            const errorMessage = e.response?.data?.message || e.message || t('error') || 'Error';
+            alert(`${t('error') || 'Error'}: ${errorMessage}`);
         }
     };
 

@@ -9,8 +9,10 @@ import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 const OrderApprovals = () => {
   const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
+  const [repairs, setRepairs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [selectedType, setSelectedType] = useState(null); // 'order' or 'repair'
   const [form, setForm] = useState({ isIssued: false, invoiceNumber: '', isPaid: false, amount: '' });
   const [noteOrderId, setNoteOrderId] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -21,8 +23,12 @@ const OrderApprovals = () => {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/orders`, config);
-      setOrders(res.data.filter((o) => o.status === 'pending_approval'));
+      const [ordersRes, repairsRes] = await Promise.all([
+        axios.get(`${API_URL}/orders`, config),
+        axios.get(`${API_URL}/repairs`, config)
+      ]);
+      setOrders(ordersRes.data.filter((o) => o.status === 'pending_approval' && !o.deletedAt));
+      setRepairs(repairsRes.data.filter((r) => r.status === 'pending_approval'));
       setLoading(false);
     } catch (e) {
       console.error(e);
@@ -33,9 +39,10 @@ const OrderApprovals = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const openModal = (order) => {
-    const fi = order.finalInvoice || {};
-    setSelected(order);
+  const openModal = (item, type = 'order') => {
+    const fi = item.finalInvoice || {};
+    setSelected(item);
+    setSelectedType(type);
     setForm({
       isIssued: Boolean(fi.isIssued),
       invoiceNumber: fi.invoiceNumber || '',
@@ -46,23 +53,49 @@ const OrderApprovals = () => {
 
   const closeModal = () => {
     setSelected(null);
+    setSelectedType(null);
     setForm({ isIssued: false, invoiceNumber: '', isPaid: false, amount: '' });
   };
 
   const save = async () => {
     if (!selected) return;
     try {
-      await axios.put(`${API_URL}/orders/${selected._id}/final-invoice`, {
-        isIssued: Boolean(form.isIssued),
-        invoiceNumber: form.invoiceNumber,
-        isPaid: Boolean(form.isPaid),
-        amount: form.amount
-      }, config);
+      if (selectedType === 'repair') {
+        // For repairs, update repair directly
+        await axios.put(`${API_URL}/repairs/${selected._id}`, {
+          finalInvoice: {
+            isIssued: Boolean(form.isIssued),
+            invoiceNumber: form.invoiceNumber,
+            isPaid: Boolean(form.isPaid),
+            amount: form.amount
+          }
+        }, config);
+      } else {
+        await axios.put(`${API_URL}/orders/${selected._id}/final-invoice`, {
+          isIssued: Boolean(form.isIssued),
+          invoiceNumber: form.invoiceNumber,
+          isPaid: Boolean(form.isPaid),
+          amount: form.amount
+        }, config);
+      }
       closeModal();
       fetchOrders();
     } catch (e) {
       console.error(e);
       alert('Error saving approval');
+    }
+  };
+
+  const moveToCompleted = async (repairId) => {
+    if (!window.confirm(t('move_to_completed_confirm') || 'Move this repair to completed orders?')) return;
+    try {
+      await axios.put(`${API_URL}/repairs/${repairId}`, {
+        status: 'completed'
+      }, config);
+      fetchOrders();
+    } catch (e) {
+      console.error(e);
+      alert('Error moving to completed');
     }
   };
 
@@ -87,10 +120,11 @@ const OrderApprovals = () => {
           <tbody className="divide-y divide-slate-800">
             {loading ? (
               <tr><td colSpan="6" className="p-8 text-center text-slate-400">{t('loading')}</td></tr>
-            ) : orders.length === 0 ? (
+            ) : orders.length === 0 && repairs.length === 0 ? (
               <tr><td colSpan="6" className="p-8 text-center text-slate-500">{t('no_orders_waiting_approval')}</td></tr>
             ) : (
-              orders.map((o) => {
+              <>
+              {orders.map((o) => {
                 const displayOrderNumber = o.manualOrderNumber || o.orderNumber || o._id;
                 const fi = o.finalInvoice || {};
                 const masterPlan = o.files && o.files.find((f) => f.type === 'master_plan');
@@ -129,7 +163,7 @@ const OrderApprovals = () => {
                         )}
                         <button
                           type="button"
-                          onClick={() => openModal(o)}
+                          onClick={() => openModal(o, 'order')}
                           className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
                         >
                           {t('estado')}
@@ -145,7 +179,52 @@ const OrderApprovals = () => {
                     </td>
                   </tr>
                 );
-              })
+              })}
+              {repairs.map((r) => {
+                const displayOrderNumber = r.manualOrderNumber || r.orderNumber || r._id;
+                const fi = r.finalInvoice || {};
+                return (
+                  <tr key={`repair-${r._id}`} className="hover:bg-slate-800/30 transition">
+                    <td className="p-4 font-mono text-amber-400">
+                      #{displayOrderNumber} <span className="text-xs text-slate-500">(Repair)</span>
+                      {(r.notes && r.notes.length > 0) && (
+                        <div className="text-xs text-slate-400 mt-1">
+                          {r.notes[r.notes.length - 1]?.text}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4 font-semibold text-white">{r.clientName}</td>
+                    <td className="p-4">{r.clientAddress || '—'}</td>
+                    <td className="p-4">
+                      {fi.isIssued ? `${t('fin_status_issued')} (${fi.invoiceNumber || '—'})` : t('fin_status_not_issued')}
+                    </td>
+                    <td className="p-4">
+                      {fi.isPaid
+                        ? `${t('paid')} (${fi.amount ?? '—'})`
+                        : `${t('fin_status_not_paid')}${typeof fi.amount === 'number' ? ` (${fi.amount})` : ''}`}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => moveToCompleted(r._id)}
+                          className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                        >
+                          {t('move_to_completed') || 'Move to Completed'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openModal(r, 'repair')}
+                          className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
+                        >
+                          {t('estado')}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              </>
             )}
           </tbody>
         </table>

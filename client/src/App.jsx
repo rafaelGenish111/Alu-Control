@@ -19,7 +19,9 @@ import PendingMaterials from './pages/PendingMaterials';
 import PurchasingTracking from './pages/PurchasingTracking';
 import OrderApprovals from './pages/OrderApprovals';
 import CompletedOrders from './pages/CompletedOrders';
+import DeletedOrders from './pages/DeletedOrders';
 import Repairs from './pages/Repairs';
+import Dashboard from './pages/Dashboard';
 
 // Simple auth guard – checks if a user is logged in
 const ProtectedRoute = ({ children }) => {
@@ -29,8 +31,6 @@ const ProtectedRoute = ({ children }) => {
   }
   return children;
 };
-
-const Dashboard = () => <div className="text-white text-2xl p-4">Dashboard Work in Progress...</div>;
 
 function App() {
   return (
@@ -48,7 +48,8 @@ function App() {
 
         {/* Backoffice / factory system – wrapped with the main layout and sidebar */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<ActiveOrders />} />
+          <Route index element={<Dashboard />} />
+          <Route path="orders" element={<ActiveOrders />} />
 
           <Route path="admin" element={<AdminPanel />} />
           <Route path="customers" element={<Customers />} />
@@ -68,6 +69,7 @@ function App() {
           <Route path="repairs" element={<Repairs />} />
           <Route path="approvals" element={<OrderApprovals />} />
           <Route path="completed" element={<CompletedOrders />} />
+          <Route path="deleted" element={<DeletedOrders />} />
         </Route>
       </Routes>
     </BrowserRouter>

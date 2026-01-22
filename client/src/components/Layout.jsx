@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Clock, Truck, Calendar as CalendarIcon, CheckCircle, Wrench, Search } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Factory, Shield, LogOut, Smartphone, Menu, X, Clock, Truck, Calendar as CalendarIcon, CheckCircle, Wrench, Search, Trash2, Package } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../config/api';
 
@@ -64,9 +64,15 @@ const Layout = () => {
 
   const menuItems = [
     {
-      label: t('sidebar_active_orders'),
+      label: t('sidebar_dashboard') || 'Dashboard',
       path: '/',
       icon: <LayoutDashboard size={20} />,
+      roles: ['super_admin', 'admin', 'office']
+    },
+    {
+      label: t('sidebar_active_orders'),
+      path: '/orders',
+      icon: <Package size={20} />,
       roles: ['super_admin', 'admin', 'office']
     },
     {
@@ -116,6 +122,12 @@ const Layout = () => {
       label: t('sidebar_completed'),
       path: '/completed',
       icon: <CheckCircle size={20} />,
+      roles: ['super_admin', 'admin', 'office']
+    },
+    {
+      label: t('sidebar_deleted') || 'Deleted Orders',
+      path: '/deleted',
+      icon: <Trash2 size={20} />,
       roles: ['super_admin', 'admin', 'office']
     },
     {

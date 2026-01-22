@@ -143,7 +143,10 @@ const OrderSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     note: String,
     user: String
-  }]
+  }],
+
+  // --- Deletion Tracking ---
+  deletedAt: { type: Date } // Set when order is cancelled/deleted, auto-deleted after 7 days
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', OrderSchema);

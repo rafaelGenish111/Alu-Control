@@ -5,6 +5,7 @@ const resources = {
   en: {
     translation: {
       // --- Sidebar (Main Toolbar) ---
+      "sidebar_dashboard": "Dashboard",
       "sidebar_active_orders": "Active Orders",
       "sidebar_pending_items": "Pending Items",
       "sidebar_purchasing": "Purchasing",
@@ -378,6 +379,15 @@ const resources = {
       "cancel_order": "Cancel Order",
       "cancel_order_confirm": "Cancel this order?",
       "cancelled_orders": "Cancelled Orders",
+      "deleted_orders": "Deleted Orders",
+      "restore": "Restore",
+      "restore_order_confirm": "Restore this order?",
+      "error_restoring_order": "Error restoring order",
+      "deleted_date": "Deleted Date",
+      "days_remaining": "Days Remaining",
+      "restoring": "Restoring...",
+      "no_deleted_orders": "No deleted orders",
+      "sidebar_deleted": "Deleted Orders",
       "material_pending": "Material Pending",
       "add_product": "Add Product",
       "add_material": "Add Material",
@@ -412,6 +422,7 @@ const resources = {
   es: {
     translation: {
       // --- Sidebar (Main Toolbar) ---
+      "sidebar_dashboard": "Panel de Control",
       "sidebar_active_orders": "Trabajos en curso",
       "sidebar_pending_items": "Compras", //
       "sidebar_purchasing": "Compras pendientes de recibir", //
@@ -781,6 +792,17 @@ const resources = {
       "cancel_order": "Cancelar Trabajo",
       "cancel_order_confirm": "¿Cancelar este trabajo?",
       "cancelled_orders": "Trabajos Cancelados",
+      "deleted_orders": "Trabajos Eliminados",
+      "restore": "Restaurar",
+      "restore_order_confirm": "¿Restaurar este trabajo?",
+      "error_restoring_order": "Error al restaurar trabajo",
+      "deleted_date": "Fecha Eliminación",
+      "days_remaining": "Días Restantes",
+      "restoring": "Restaurando...",
+      "no_deleted_orders": "No hay trabajos eliminados",
+      "sidebar_deleted": "Trabajos Eliminados",
+      "move_to_completed": "Mover a Completados",
+      "move_to_completed_confirm": "¿Mover este arreglo a trabajos completados?",
       "material_pending": "Por llegar",
       "add_product": "Añadir Producto",
       "add_material": "Añadir Material",

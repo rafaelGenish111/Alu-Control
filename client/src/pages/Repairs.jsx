@@ -36,6 +36,10 @@ const Repairs = () => {
   const [editingField, setEditingField] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [updatingDetails, setUpdatingDetails] = useState(false);
+  const [editingInstallers, setEditingInstallers] = useState(false);
+  const [installersList, setInstallersList] = useState([]);
+  const [installersDraft, setInstallersDraft] = useState([]);
+  const [savingInstallers, setSavingInstallers] = useState(false);
 
   const [scheduleRepair, setScheduleRepair] = useState(null);
 
@@ -59,6 +63,27 @@ const Repairs = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRepairs();
   }, [fetchRepairs]);
+
+  useEffect(() => {
+    const fetchInstallers = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/orders/install/team-list`, config);
+        setInstallersList(res.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchInstallers();
+  }, [config]);
+
+  useEffect(() => {
+    if (selected && editingInstallers) {
+      const installerIds = Array.isArray(selected.installers) 
+        ? selected.installers.map(i => typeof i === 'string' ? i : i._id || i)
+        : [];
+      setInstallersDraft(installerIds);
+    }
+  }, [selected, editingInstallers]);
 
   const lookupOrder = async (orderNumber) => {
     if (!orderNumber || orderNumber.trim().length === 0) {
@@ -193,6 +218,31 @@ const Repairs = () => {
       alert(t('error') + ': ' + t('order_col').toLowerCase());
     } finally {
       setUpdatingOrderNumber(false);
+    }
+  };
+
+  const updateRepairDetails = async (field, value) => {
+    if (!selected) return;
+    setUpdatingDetails(true);
+    try {
+      const updateData = {};
+      if (field === 'problem') updateData.problem = value;
+      else if (field === 'warrantyStatus') updateData.warrantyStatus = value;
+      else if (field === 'clientPhone') updateData.clientPhone = value;
+      else if (field === 'clientAddress') updateData.clientAddress = value;
+      else if (field === 'hora') updateData.hora = value || null;
+
+      await axios.put(`${API_URL}/repairs/${selected._id}`, updateData, config);
+      const refreshed = await axios.get(`${API_URL}/repairs/${selected._id}`, config);
+      setSelected(refreshed.data);
+      setEditingField(null);
+      setEditValues({});
+      fetchRepairs();
+    } catch (e) {
+      console.error(e);
+      alert(t('error') + ': ' + t('error_updating_status'));
+    } finally {
+      setUpdatingDetails(false);
     }
   };
 
@@ -571,6 +621,8 @@ const Repairs = () => {
                 setOrderNumberValue('');
                 setEditingField(null);
                 setEditValues({});
+                setEditingInstallers(false);
+                setInstallersDraft([]);
               }} className="text-slate-400 hover:text-white"><X /></button>
             </div>
 
@@ -888,6 +940,85 @@ const Repairs = () => {
                 <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
                   <div className="text-xs text-slate-400">{t('payment_note')}</div>
                   <div className="text-white font-medium mt-1">{selected.paymentNote || '—'}</div>
+                </div>
+                <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-slate-400">{t('assign_team') || 'Installers'}</div>
+                    {!editingInstallers && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const installerIds = Array.isArray(selected.installers) 
+                            ? selected.installers.map(i => typeof i === 'string' ? i : i._id || i)
+                            : [];
+                          setInstallersDraft(installerIds);
+                          setEditingInstallers(true);
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        {t('edit')}
+                      </button>
+                    )}
+                  </div>
+                  {editingInstallers ? (
+                    <div className="space-y-2">
+                      <div className="bg-slate-800 border border-slate-600 rounded-xl p-2 max-h-40 overflow-y-auto">
+                        {installersList.map((worker) => (
+                          <div
+                            key={worker._id}
+                            onClick={() => toggleInstaller(worker._id)}
+                            className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${installersDraft.includes(worker._id)
+                              ? 'bg-blue-600/20 border border-blue-500/50'
+                              : 'hover:bg-slate-700'
+                              }`}
+                          >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${installersDraft.includes(worker._id)
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-slate-500'
+                              }`}>
+                              {installersDraft.includes(worker._id) && <div className="w-2 h-2 bg-white rounded-full" />}
+                            </div>
+                            <span className="text-sm text-white">{worker.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={saveInstallers}
+                          disabled={savingInstallers}
+                          className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                        >
+                          {savingInstallers ? t('saving') : t('save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingInstallers(false);
+                            setInstallersDraft([]);
+                          }}
+                          className="flex-1 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold border border-slate-700"
+                        >
+                          {t('cancel')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-white font-medium mt-1">
+                      {selected.installers && selected.installers.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selected.installers.map((inst, idx) => {
+                            const installer = installersList.find(i => i._id === (typeof inst === 'string' ? inst : inst._id));
+                            return installer ? (
+                              <span key={idx} className="px-2 py-1 bg-blue-600/20 text-blue-300 rounded text-xs">
+                                {installer.name}
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      ) : '—'}
+                    </div>
+                  )}
                 </div>
               </div>
 

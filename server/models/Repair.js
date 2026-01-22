@@ -17,7 +17,7 @@ const RepairSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ['open', 'ready_to_schedule', 'scheduled', 'in_progress', 'closed'],
+    enum: ['open', 'ready_to_schedule', 'scheduled', 'in_progress', 'pending_approval', 'completed', 'closed'],
     default: 'open'
   },
 
@@ -53,7 +53,15 @@ const RepairSchema = new mongoose.Schema({
     name: { type: String },
     createdAt: { type: Date, default: Date.now },
     createdBy: { type: String }
-  }]
+  }],
+
+  // Final Closure Details (similar to Order)
+  finalInvoice: {
+    isIssued: { type: Boolean, default: false },
+    invoiceNumber: { type: String },
+    amount: { type: Number },
+    isPaid: { type: Boolean, default: false }
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Repair', RepairSchema);

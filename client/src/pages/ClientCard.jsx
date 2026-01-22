@@ -315,7 +315,14 @@ const ClientCard = () => {
     <div className="max-w-6xl mx-auto text-slate-100 pb-10">
 
       <div className="flex justify-between items-center mb-6">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-400 hover:text-white transition">
+        <button onClick={() => {
+          // Try to go back in history, fallback to home
+          if (window.history.length > 1) {
+            navigate(-1);
+          } else {
+            navigate('/');
+          }
+        }} className="flex items-center gap-2 text-slate-400 hover:text-white transition">
           <ArrowLeft size={20} /> {t('back_to_list')}
         </button>
 

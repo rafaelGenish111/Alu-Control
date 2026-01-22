@@ -82,7 +82,7 @@ exports.updateRepair = async (req, res) => {
     const repair = await Repair.findById(req.params.id);
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
-    const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, manualOrderNumber, clientPhone, clientAddress, hora } = req.body;
+    const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, manualOrderNumber, clientPhone, clientAddress, hora, installers, finalInvoice, status } = req.body;
 
     if (typeof problem === 'string') repair.problem = problem.trim();
     if (typeof warrantyStatus === 'string') {
@@ -93,6 +93,20 @@ exports.updateRepair = async (req, res) => {
     if (typeof clientAddress === 'string') repair.clientAddress = clientAddress.trim();
     if (typeof hora === 'string') repair.hora = hora.trim();
     if (typeof hora === 'undefined' || hora === null) repair.hora = null;
+    if (Array.isArray(installers)) {
+      repair.installers = installers;
+    }
+    if (typeof status === 'string' && ['open', 'ready_to_schedule', 'scheduled', 'in_progress', 'pending_approval', 'completed', 'closed'].includes(status)) {
+      repair.status = status;
+    }
+    if (finalInvoice && typeof finalInvoice === 'object') {
+      repair.finalInvoice = {
+        isIssued: Boolean(finalInvoice.isIssued),
+        invoiceNumber: typeof finalInvoice.invoiceNumber === 'string' ? finalInvoice.invoiceNumber : '',
+        amount: typeof finalInvoice.amount === 'number' ? finalInvoice.amount : undefined,
+        isPaid: Boolean(finalInvoice.isPaid)
+      };
+    }
     if (contactedAt) {
       const dt = new Date(contactedAt);
       if (!Number.isNaN(dt.getTime())) repair.contactedAt = dt;
@@ -211,7 +225,9 @@ exports.closeRepair = async (req, res) => {
     const repair = await Repair.findById(req.params.id);
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
-    repair.status = 'closed';
+    // If installer closes, move to pending_approval instead of closed
+    // This allows financial team to review and either skip to completed or process normally
+    repair.status = 'pending_approval';
     repair.notes.push({ text: 'Closed', createdAt: new Date(), createdBy: userName });
     const saved = await repair.save();
     res.json(saved);

@@ -298,6 +298,13 @@ exports.updateOrderStatus = async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (order) {
       order.status = status;
+      // If cancelling, mark as deleted instead of just changing status
+      if (status === 'cancelled') {
+        order.deletedAt = new Date();
+      } else if (order.deletedAt && status !== 'cancelled') {
+        // If restoring from cancelled, clear deletedAt
+        order.deletedAt = null;
+      }
       order.timeline.push({
         status,
         note: `Status updated to ${status}`,
@@ -768,6 +775,69 @@ exports.updateOrderGeneral = async (req, res) => {
 
     const saved = await order.save();
     res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --- DELETED ORDERS MANAGEMENT ---
+// Get all deleted orders (with deletedAt set)
+exports.getDeletedOrders = async (req, res) => {
+  try {
+    const deletedOrders = await Order.find({ deletedAt: { $ne: null } })
+      .sort({ deletedAt: -1 });
+    res.json(deletedOrders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Restore a deleted order
+exports.restoreOrder = async (req, res) => {
+  const userName = req.user ? req.user.name : 'System';
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    
+    if (!order.deletedAt) {
+      return res.status(400).json({ message: 'Order is not deleted' });
+    }
+
+    // Restore order - clear deletedAt and set status back to previous or 'new'
+    order.deletedAt = null;
+    // If status was cancelled, restore to a reasonable status
+    if (order.status === 'cancelled') {
+      order.status = 'new';
+    }
+    
+    order.timeline.push({
+      status: order.status,
+      note: 'Order restored from deleted',
+      date: new Date(),
+      user: userName
+    });
+
+    const saved = await order.save();
+    res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Permanently delete orders older than 7 days
+exports.cleanupDeletedOrders = async (req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const result = await Order.deleteMany({
+      deletedAt: { $ne: null, $lt: sevenDaysAgo }
+    });
+    
+    res.json({ 
+      message: `Deleted ${result.deletedCount} orders permanently`,
+      deletedCount: result.deletedCount 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

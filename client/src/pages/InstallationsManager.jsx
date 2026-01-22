@@ -201,8 +201,9 @@ const InstallationsManager = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl flex-1">
-        <table className="w-full text-left text-sm text-slate-300">
+      <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl flex-1 flex flex-col">
+        <div className="overflow-y-auto flex-1">
+          <table className="w-full text-left text-sm text-slate-300">
           <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
             <tr>
               <th className="p-4">{t('order_col')}</th>
@@ -366,6 +367,7 @@ const InstallationsManager = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {selectedOrder && (

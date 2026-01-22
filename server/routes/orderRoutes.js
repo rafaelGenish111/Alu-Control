@@ -14,7 +14,10 @@ const {
     updateOrderIssue,
     updateClientDetails,
     updateOrderGeneral,
-    searchOrders
+    searchOrders,
+    getDeletedOrders,
+    restoreOrder,
+    cleanupDeletedOrders
 } = require('../controllers/orderController');
 
 // Import NEW Install Controller
@@ -28,6 +31,10 @@ router.get('/', protect, getOrders);
 
 // Global search (must come before /:id)
 router.get('/search', protect, searchOrders);
+
+// Deleted orders management (must come before /:id)
+router.get('/deleted', protect, authorize('super_admin', 'admin', 'office'), getDeletedOrders);
+router.post('/deleted/cleanup', protect, authorize('super_admin', 'admin'), cleanupDeletedOrders);
 
 // Batching & Clients (paths קבועים)
 router.get('/clients/search', protect, searchClients);
@@ -68,6 +75,7 @@ router.put('/:id/issue', protect, authorize('super_admin', 'admin', 'office'), u
 router.put('/:id/final-invoice', protect, authorize('super_admin', 'admin', 'office'), updateFinalInvoice);
 router.post('/:id/notes', protect, addOrderNote);
 router.put('/:id/files', protect, addOrderFile);
+router.post('/:id/restore', protect, authorize('super_admin', 'admin', 'office'), restoreOrder);
 router.get('/:id', protect, getOrderById);
 
 module.exports = router;
