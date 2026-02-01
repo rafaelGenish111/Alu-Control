@@ -1,11 +1,11 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-const app = require('../app'); 
+const app = require('../app');
 
 // שים לב: אנחנו צריכים את המודל כדי ליצור משתמש ראשוני לבדיקה
 // תבדוק שהנתיב הזה נכון אצלך! אם המודל נמצא בתיקייה אחרת, תקן את הנתיב.
-const User = require('../models/User'); 
+const User = require('../models/User');
 
 let mongoServer;
 
@@ -30,7 +30,11 @@ afterEach(async () => {
 
 describe('Auth System (CRM Style)', () => {
 
+    const { DEFAULT_TENANT_ID } = require('../middleware/tenantHandler');
+    const testTenantId = DEFAULT_TENANT_ID; // 'default_glass_dynamics'
+
     const adminUser = {
+        tenantId: testTenantId,
         name: 'Admin Boss',
         email: 'admin@bizflow.com',
         password: 'SecretPassword123!',
@@ -40,7 +44,7 @@ describe('Auth System (CRM Style)', () => {
     // בדיקה 1: התחברות (Happy Path)
     // מכיוון שאין Route להרשמה פומבית, אנחנו יוצרים את המשתמש ישירות ב-DB
     it('POST /api/auth/login - should login successfully', async () => {
-        
+
         // 1. יצירת משתמש ידנית ב-DB (Seed)
         // הערה: אני מניח שהמודל שלך מצפין סיסמה אוטומטית ב-pre('save')
         await User.create(adminUser);

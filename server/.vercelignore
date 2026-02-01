@@ -1,0 +1,9 @@
+node_modules
+.env
+*.log
+tests
+scripts
+seedDemo.js
+seeder.js
+seedOrders.js
+seedSuppliers.js
