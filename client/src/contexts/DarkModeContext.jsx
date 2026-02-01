@@ -97,7 +97,12 @@ export const DarkModeProvider = ({ children }) => {
       const checkDarkMode = () => {
         const hour = new Date().getHours();
         const shouldBeDark = hour >= 18 || hour < 6;
-        console.log(`⏰ Auto mode check: hour=${hour}, shouldBeDark=${shouldBeDark}`);
+
+        // בדוק אם המצב כבר נכון כדי למנוע עדכונים מיותרים
+        const currentIsDark = document.documentElement.classList.contains('dark');
+        if (currentIsDark === shouldBeDark) {
+          return; // אין צורך לעדכן
+        }
 
         setIsDark(shouldBeDark);
 
@@ -105,11 +110,7 @@ export const DarkModeProvider = ({ children }) => {
         document.documentElement.classList.remove('dark');
         if (shouldBeDark) {
           document.documentElement.classList.add('dark');
-          console.log('✅ Auto mode: Dark class added');
-        } else {
-          console.log('✅ Auto mode: Dark class removed');
         }
-        console.log('📋 HTML classes after update:', document.documentElement.className);
       };
 
       checkDarkMode();

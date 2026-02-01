@@ -2,11 +2,33 @@ import axios from 'axios';
 
 // בפיתוח (npm run dev): תמיד proxy – הבקשות ל-/api עוברות אוטומטית ל-5001. בפרודקשן: VITE_API_URL או ברירת מחדל.
 const isDev = typeof import.meta.env.DEV !== 'undefined' && import.meta.env.DEV;
-export const API_URL = isDev
-  ? '/api'
-  : ((import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).trim() !== '')
-    ? String(import.meta.env.VITE_API_URL).replace(/\/api\/?$/, '') + '/api'
-    : 'http://localhost:5001/api');
+
+let API_URL;
+if (isDev) {
+  // בפיתוח מקומי - השתמש ב-proxy
+  API_URL = '/api';
+} else {
+  // ב-production - בדוק אם יש VITE_API_URL
+  const viteApiUrl = import.meta.env.VITE_API_URL;
+  if (viteApiUrl && String(viteApiUrl).trim() !== '') {
+    // אם יש VITE_API_URL, השתמש בו (הסר /api אם קיים והוסף מחדש)
+    API_URL = String(viteApiUrl).replace(/\/api\/?$/, '') + '/api';
+  } else {
+    // אם אין VITE_API_URL, השתמש ב-rewrite דרך vercel.json (נתיב יחסי)
+    // זה יעבוד רק אם vercel.json מוגדר נכון
+    API_URL = '/api';
+  }
+}
+
+// Debug log
+console.log('🔧 API Config:', {
+  isDev,
+  API_URL,
+  viteApiUrl: import.meta.env.VITE_API_URL,
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A'
+});
+
+export { API_URL };
 
 const api = axios.create({
   baseURL: API_URL,

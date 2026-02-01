@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://your-server-app.vercel.app/api/$1"
+      "destination": "https://alu-control-beta.vercel.app/api/$1"
     },
     {
       "source": "/(.*)",
