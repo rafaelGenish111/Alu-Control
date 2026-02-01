@@ -36,13 +36,27 @@ const connectDB = async () => {
 
 // Export handler for Vercel
 module.exports = async (req, res) => {
-    // Connect to DB if not connected
     try {
+        // Connect to DB if not connected
         await connectDB();
     } catch (error) {
-        return res.status(500).json({ error: 'Database connection failed' });
+        console.error('❌ Database connection failed:', error.message);
+        return res.status(500).json({
+            error: 'Database connection failed',
+            message: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 
     // Handle the request
-    return app(req, res);
+    try {
+        return await app(req, res);
+    } catch (error) {
+        console.error('❌ Request handler error:', error);
+        return res.status(500).json({
+            error: 'Internal server error',
+            message: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
 };

@@ -36,12 +36,15 @@ const corsOptions = {
         const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
         const isLocalNetwork = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin);
 
-        if (isLocalhost || isLocalNetwork) {
+        // ב-Vercel: מאפשר כתובות vercel.app
+        const isVercel = origin.includes('vercel.app');
+
+        if (isLocalhost || isLocalNetwork || isVercel) {
             callback(null, true);
             return;
         }
 
-        console.log(`🚫 Blocked CORS from: ${origin}`);
+        console.log(`🚫 Blocked CORS from: ${origin} (allowed: ${allowedOrigin})`);
         callback(new Error('Not allowed by CORS'));
     },
     credentials: true, // חובה ל-Login
