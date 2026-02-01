@@ -3,29 +3,28 @@ import axios from 'axios';
 // בפיתוח (npm run dev): תמיד proxy – הבקשות ל-/api עוברות אוטומטית ל-5001. בפרודקשן: VITE_API_URL או ברירת מחדל.
 const isDev = typeof import.meta.env.DEV !== 'undefined' && import.meta.env.DEV;
 
+// בדיקה אם אנחנו ב-Vercel production
+const isVercel = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+
 let API_URL;
 if (isDev) {
   // בפיתוח מקומי - השתמש ב-proxy
   API_URL = '/api';
 } else {
-  // ב-production - בדוק אם יש VITE_API_URL
-  const viteApiUrl = import.meta.env.VITE_API_URL;
-  if (viteApiUrl && String(viteApiUrl).trim() !== '') {
-    // אם יש VITE_API_URL, השתמש בו (הסר /api אם קיים והוסף מחדש)
-    API_URL = String(viteApiUrl).replace(/\/api\/?$/, '') + '/api';
-  } else {
-    // אם אין VITE_API_URL, השתמש ב-rewrite דרך vercel.json (נתיב יחסי)
-    // זה יעבוד רק אם vercel.json מוגדר נכון
-    API_URL = '/api';
-  }
+  // ב-production - תמיד השתמש ב-rewrite דרך vercel.json (נתיב יחסי)
+  // vercel.json יעשה rewrite מ-/api/* ל-https://alu-control-beta.vercel.app/api/*
+  // לא משתמש ב-VITE_API_URL כי זה יגרום לבעיות עם ה-rewrite
+  API_URL = '/api';
 }
 
 // Debug log
 console.log('🔧 API Config:', {
   isDev,
+  isVercel,
   API_URL,
   viteApiUrl: import.meta.env.VITE_API_URL,
-  hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A'
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A',
+  fullUrl: typeof window !== 'undefined' ? window.location.href : 'N/A'
 });
 
 export { API_URL };
