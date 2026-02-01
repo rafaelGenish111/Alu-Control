@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { DEFAULT_TENANT_ID } = require('../middleware/tenantHandler');
 
 // Helper to create a signed JWT token
 const generateToken = (id, role) => {
@@ -9,11 +10,12 @@ const generateToken = (id, role) => {
 // Registration – primarily used to create the first admin
 exports.registerUser = async (req, res) => {
   const { name, email, password, role, language } = req.body;
+  const tenantId = req.tenantId || DEFAULT_TENANT_ID;
   try {
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ tenantId, email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ name, email, password, role, language });
+    const user = await User.create({ tenantId, name, email, password, role, language });
 
     if (user) {
       res.status(201).json({
@@ -27,27 +29,36 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// Login handler
+// Login handler – tenantId optional in body (default: default_glass_dynamics)
 exports.loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, tenantId: bodyTenantId } = req.body;
+  const tenantId = bodyTenantId || DEFAULT_TENANT_ID;
+
+  console.log(`🔐 [loginUser] Attempting login for: ${email} (tenantId: ${tenantId})`);
 
   // Validate input
   if (!email || !password) {
+    console.log(`🔴 [loginUser] Missing email or password`);
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ tenantId, email });
 
     if (!user) {
+      console.log(`🔴 [loginUser] User not found: ${email} (tenantId: ${tenantId})`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const isPasswordValid = await user.matchPassword(password);
 
     if (!isPasswordValid) {
+      console.log(`🔴 [loginUser] Invalid password for: ${email}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    const token = generateToken(user._id, user.role);
+    console.log(`✅ [loginUser] Login successful: ${email} (role: ${user.role}, tenantId: ${user.tenantId})`);
 
     res.json({
       _id: user._id,
@@ -55,12 +66,11 @@ exports.loginUser = async (req, res) => {
       email: user.email,
       role: user.role,
       language: user.language,
-      token: generateToken(user._id, user.role)
+      tenantId: user.tenantId,
+      token: token
     });
   } catch (error) {
-    console.error('Login error:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('🔴 [loginUser] Login error:', error);
     res.status(500).json({ message: error.message || 'Server error during login' });
   }
 };
@@ -68,15 +78,13 @@ exports.loginUser = async (req, res) => {
 // Admin-only endpoint to create a new user (wired in router)
 exports.createUser = async (req, res) => {
   const { name, email, password, role, language, phone } = req.body;
-
-  // Both admin and super_admin can create users with any role
-  // No additional restrictions needed
+  const tenantId = req.tenantId;
 
   try {
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ tenantId, email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ name, email, password, role, language, phone });
+    const user = await User.create({ tenantId, name, email, password, role, language, phone });
 
     if (user) {
       res.status(201).json({
@@ -92,24 +100,24 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// הוסף את הפונקציה הזו בסוף הקובץ (לפני ה-exports)
 exports.getAllUsers = async (req, res) => {
   try {
-    // שולף את כל המשתמשים, אבל מחזיר רק מידע רלוונטי (בלי סיסמאות!)
-    const users = await User.find({}).select('-password').sort({ name: 1 });
+    const users = await User.find({})
+      .setOptions({ tenantId: req.tenantId })
+      .select('-password')
+      .sort({ name: 1 });
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// הוסף בסוף הקובץ
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, role, language, password } = req.body;
 
   try {
-    const user = await User.findById(id);
+    const user = await User.findOne({ _id: id, tenantId: req.tenantId });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // עדכון שדות רגילים
@@ -144,7 +152,7 @@ exports.deleteUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const user = await User.findById(id);
+    const user = await User.findOne({ _id: id, tenantId: req.tenantId });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Prevent deleting yourself
@@ -152,7 +160,7 @@ exports.deleteUser = async (req, res) => {
       return res.status(400).json({ message: 'Cannot delete your own account' });
     }
 
-    await User.findByIdAndDelete(id);
+    await User.deleteOne({ _id: id, tenantId: req.tenantId });
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {

@@ -7,8 +7,9 @@ import NewOrderModal from '../components/NewOrderModal';
 import { API_URL } from '../config/api';
 
 const ActiveOrders = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const isRTL = i18n.language === 'he';
     const [activeTab, setActiveTab] = useState('active'); // 'active' or 'cancelled'
     const [orders, setOrders] = useState([]);
     const [cancelledOrders, setCancelledOrders] = useState([]);
@@ -98,7 +99,7 @@ const ActiveOrders = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'offer': return 'bg-slate-700 text-slate-300';
+            case 'offer': return 'dark:bg-slate-700 bg-gray-300 dark:text-slate-300 text-gray-900';
             case 'production': return 'bg-amber-500/20 text-amber-400';
             case 'install': return 'bg-blue-500/20 text-blue-400';
             case 'new': return 'bg-blue-500/20 text-blue-400';
@@ -111,7 +112,7 @@ const ActiveOrders = () => {
             case 'pending_approval': return 'bg-indigo-500/20 text-indigo-400';
             case 'completed': return 'bg-emerald-500/20 text-emerald-400';
             case 'cancelled': return 'bg-red-500/20 text-red-400';
-            default: return 'bg-slate-700 text-white';
+            default: return 'dark:bg-slate-700 bg-gray-300 dark:text-white text-gray-900';
         }
     };
 
@@ -133,7 +134,7 @@ const ActiveOrders = () => {
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold text-white">{t('sidebar_active_orders')}</h2>
+                <h2 className="text-3xl font-bold dark:text-white text-gray-900">{t('sidebar_active_orders')}</h2>
                 {user && ['super_admin', 'admin', 'office'].includes(user.role) && activeTab === 'active' && (
                     <button
                         onClick={() => setIsModalOpen(true)}
@@ -148,21 +149,19 @@ const ActiveOrders = () => {
             <div className="flex gap-2 mb-6 border-b border-slate-800">
                 <button
                     onClick={() => setActiveTab('active')}
-                    className={`px-6 py-3 font-medium transition ${
-                        activeTab === 'active'
-                            ? 'text-blue-400 border-b-2 border-blue-400'
-                            : 'text-slate-400 hover:text-slate-300'
-                    }`}
+                    className={`px-6 py-3 font-medium transition ${activeTab === 'active'
+                        ? 'text-blue-400 border-b-2 border-blue-400'
+                        : 'dark:text-slate-400 text-gray-600 hover:dark:text-slate-300 hover:text-gray-900'
+                        }`}
                 >
                     {t('active') || 'Active'}
                 </button>
                 <button
                     onClick={() => setActiveTab('cancelled')}
-                    className={`px-6 py-3 font-medium transition ${
-                        activeTab === 'cancelled'
-                            ? 'text-red-400 border-b-2 border-red-400'
-                            : 'text-slate-400 hover:text-slate-300'
-                    }`}
+                    className={`px-6 py-3 font-medium transition ${activeTab === 'cancelled'
+                        ? 'text-red-400 border-b-2 border-red-400'
+                        : 'dark:text-slate-400 text-gray-600 hover:dark:text-slate-300 hover:text-gray-900'
+                        }`}
                 >
                     {t('cancelled') || 'Cancelled'}
                 </button>
@@ -170,20 +169,20 @@ const ActiveOrders = () => {
 
             {/* Active Orders Table */}
             {activeTab === 'active' && (
-                <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
+                <div className="dark:bg-slate-900 bg-white rounded-xl border dark:border-slate-800 border-gray-200 overflow-hidden shadow-xl">
+                    <table className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                        <thead className="dark:bg-slate-800/50 bg-gray-100 dark:text-slate-400 text-gray-600 uppercase text-xs">
                             <tr>
                                 <th className="p-4">{t('active_col_order')}</th>
                                 <th className="p-4">{t('client_name')}</th>
                                 <th className="p-4">{t('region')}</th>
-                                <th className="p-4 text-center">{t('work_days')}</th>
+                                <th className={`p-4 ${isRTL ? 'text-right' : 'text-center'}`}>{t('work_days')}</th>
                                 <th className="p-4">{t('status')}</th>
                             </tr>
                         </thead>
-                        <tbody className="text-slate-300 divide-y divide-slate-800">
-                            {loading ? (<tr><td colSpan="5" className="p-8 text-center">{t('loading')}</td></tr>) :
-                                orders.length === 0 ? (<tr><td colSpan="5" className="p-8 text-center text-slate-500">{t('no_open_orders')}</td></tr>) :
+                        <tbody className="dark:text-slate-300 text-gray-700 divide-y dark:divide-slate-800 divide-gray-200">
+                            {loading ? (<tr><td colSpan="5" className={`p-8 ${isRTL ? 'text-right' : 'text-center'} dark:text-slate-300 text-gray-700`}>{t('loading')}</td></tr>) :
+                                orders.length === 0 ? (<tr><td colSpan="5" className={`p-8 ${isRTL ? 'text-right' : 'text-center'} dark:text-slate-500 text-gray-600`}>{t('no_open_orders')}</td></tr>) :
                                     orders.map((order) => {
                                         const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
 
@@ -191,13 +190,13 @@ const ActiveOrders = () => {
                                             <tr
                                                 key={order._id}
                                                 onClick={() => navigate(`/orders/${order._id}`)}
-                                                className="hover:bg-slate-800/50 transition cursor-pointer"
+                                                className="hover:dark:bg-slate-800/50 hover:bg-gray-50 transition cursor-pointer"
                                             >
                                                 <td className="p-4 font-mono text-blue-400">#{displayOrderNumber}</td>
-                                                <td className="p-4 font-bold text-white">{order.clientName}</td>
+                                                <td className="p-4 font-bold dark:text-white text-gray-900">{order.clientName}</td>
                                                 <td className="p-4">{order.region || order.clientAddress}</td>
-                                                <td className="p-4 text-center">
-                                                    <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700">
+                                                <td className={`p-4 ${isRTL ? 'text-right' : 'text-center'}`}>
+                                                    <span className="dark:bg-slate-800 bg-gray-100 px-2 py-1 rounded text-xs border dark:border-slate-700 border-gray-300 dark:text-white text-gray-900">
                                                         {order.estimatedInstallationDays || 1}
                                                     </span>
                                                 </td>
@@ -216,9 +215,9 @@ const ActiveOrders = () => {
 
             {/* Cancelled Orders Table */}
             {activeTab === 'cancelled' && (
-                <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
+                <div className="dark:bg-slate-900 bg-white rounded-xl border dark:border-slate-800 border-gray-200 overflow-hidden shadow-xl">
+                    <table className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                        <thead className="dark:bg-slate-800/50 bg-gray-100 dark:text-slate-400 text-gray-600 uppercase text-xs">
                             <tr>
                                 <th className="p-4">{t('active_col_order')}</th>
                                 <th className="p-4">{t('client_name')}</th>
@@ -228,11 +227,11 @@ const ActiveOrders = () => {
                                 <th className="p-4">{t('actions') || 'Actions'}</th>
                             </tr>
                         </thead>
-                        <tbody className="text-slate-300 divide-y divide-slate-800">
+                        <tbody className="dark:text-slate-300 text-gray-700 divide-y dark:divide-slate-800 divide-gray-200">
                             {loadingCancelled ? (
-                                <tr><td colSpan="6" className="p-8 text-center">{t('loading')}</td></tr>
+                                <tr><td colSpan="6" className={`p-8 ${isRTL ? 'text-right' : 'text-center'}`}>{t('loading')}</td></tr>
                             ) : cancelledOrders.length === 0 ? (
-                                <tr><td colSpan="6" className="p-8 text-center text-slate-500">{t('no_cancelled_orders') || 'No cancelled orders'}</td></tr>
+                                <tr><td colSpan="6" className={`p-8 ${isRTL ? 'text-right' : 'text-center'} dark:text-slate-500 text-gray-600`}>{t('no_cancelled_orders') || 'No cancelled orders'}</td></tr>
                             ) : (
                                 cancelledOrders.map((order) => {
                                     const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
@@ -243,36 +242,35 @@ const ActiveOrders = () => {
                                             key={order._id}
                                             className="hover:bg-slate-800/50 transition"
                                         >
-                                            <td 
+                                            <td
                                                 className="p-4 font-mono text-red-400 cursor-pointer"
                                                 onClick={() => navigate(`/orders/${order._id}`)}
                                             >
                                                 #{displayOrderNumber}
                                             </td>
-                                            <td 
-                                                className="p-4 font-bold text-white cursor-pointer"
+                                            <td
+                                                className="p-4 font-bold dark:text-white text-gray-900 cursor-pointer"
                                                 onClick={() => navigate(`/orders/${order._id}`)}
                                             >
                                                 {order.clientName}
                                             </td>
-                                            <td 
+                                            <td
                                                 className="p-4 cursor-pointer"
                                                 onClick={() => navigate(`/orders/${order._id}`)}
                                             >
                                                 {order.region || order.clientAddress || '—'}
                                             </td>
-                                            <td className="p-4 text-slate-400">
+                                            <td className="p-4 dark:text-slate-400 text-gray-600">
                                                 {order.deletedAt ? new Date(order.deletedAt).toLocaleDateString() : '—'}
                                             </td>
                                             <td className="p-4">
                                                 {daysLeft !== null && (
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                                        daysLeft === 0 
-                                                            ? 'bg-red-500/20 text-red-400' 
-                                                            : daysLeft <= 2 
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${daysLeft === 0
+                                                        ? 'bg-red-500/20 text-red-400'
+                                                        : daysLeft <= 2
                                                             ? 'bg-orange-500/20 text-orange-400'
-                                                            : 'bg-slate-800 text-slate-300'
-                                                    }`}>
+                                                            : 'dark:bg-slate-800 bg-gray-200 dark:text-slate-300 text-gray-900'
+                                                        }`}>
                                                         {daysLeft} {t('days') || 'days'}
                                                     </span>
                                                 )}
@@ -283,7 +281,7 @@ const ActiveOrders = () => {
                                                         e.stopPropagation();
                                                         restoreOrder(order._id);
                                                     }}
-                                                    className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-2 transition"
+                                                    className={`bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-2 transition ${isRTL ? 'flex-row-reverse' : ''}`}
                                                 >
                                                     <RotateCcw size={14} />
                                                     {t('restore') || 'Restore'}

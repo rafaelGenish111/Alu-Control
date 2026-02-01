@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Import all main pages – make sure these files exist under the pages directory
 import Layout from './components/Layout';
@@ -22,6 +22,7 @@ import CompletedOrders from './pages/CompletedOrders';
 import DeletedOrders from './pages/DeletedOrders';
 import Repairs from './pages/Repairs';
 import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
 
 // Simple auth guard – checks if a user is logged in
 const ProtectedRoute = ({ children }) => {
@@ -34,45 +35,44 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Login page – outside of the main layout */}
-        <Route path="/login" element={<Login />} />
+    <Routes>
+      {/* Login page – outside of the main layout */}
+      <Route path="/login" element={<Login />} />
 
-        {/* Installer app – outside of the regular side menu */}
-        <Route path="/installer" element={
-          <ProtectedRoute>
-            <InstallerApp />
-          </ProtectedRoute>
-        } />
+      {/* Installer app – outside of the regular side menu */}
+      <Route path="/installer" element={
+        <ProtectedRoute>
+          <InstallerApp />
+        </ProtectedRoute>
+      } />
 
-        {/* Backoffice / factory system – wrapped with the main layout and sidebar */}
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Dashboard />} />
-          <Route path="orders" element={<ActiveOrders />} />
+      {/* Backoffice / factory system – wrapped with the main layout and sidebar */}
+      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route index element={<Dashboard />} />
+        <Route path="orders" element={<ActiveOrders />} />
 
-          <Route path="admin" element={<AdminPanel />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="customers/:name" element={<CustomerProfile />} />
+        <Route path="admin" element={<AdminPanel />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="customers/:name" element={<CustomerProfile />} />
 
-          {/* Specific order page */}
-          <Route path="orders/:id" element={<ClientCard />} />
-          {/* Additional sections */}
+        {/* Specific order page */}
+        <Route path="orders/:id" element={<ClientCard />} />
+        {/* Additional sections */}
 
-          <Route path="production" element={<Production />} />
-          <Route path="admin/suppliers" element={<SupplierManagement />} />
-          <Route path="admin/products" element={<ProductManagement />} />
-          <Route path="installations" element={<InstallationsManager />} />
-          <Route path="calendar" element={<CalendarView />} />
-          <Route path="procurement/pending" element={<PendingMaterials />} />
-          <Route path="procurement/tracking" element={<PurchasingTracking />} />
-          <Route path="repairs" element={<Repairs />} />
-          <Route path="approvals" element={<OrderApprovals />} />
-          <Route path="completed" element={<CompletedOrders />} />
-          <Route path="deleted" element={<DeletedOrders />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+        <Route path="production" element={<Production />} />
+        <Route path="admin/suppliers" element={<SupplierManagement />} />
+        <Route path="admin/products" element={<ProductManagement />} />
+        <Route path="installations" element={<InstallationsManager />} />
+        <Route path="calendar" element={<CalendarView />} />
+        <Route path="procurement/pending" element={<PendingMaterials />} />
+        <Route path="procurement/tracking" element={<PurchasingTracking />} />
+        <Route path="repairs" element={<Repairs />} />
+        <Route path="approvals" element={<OrderApprovals />} />
+        <Route path="completed" element={<CompletedOrders />} />
+        <Route path="deleted" element={<DeletedOrders />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
+    </Routes>
   );
 }
 

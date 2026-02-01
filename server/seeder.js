@@ -17,6 +17,7 @@ const seedSuperAdmin = async () => {
 
     // 3. Create the initial Super Admin user
     const superAdmin = await User.create({
+      tenantId: 'default_glass_dynamics',
       name: 'Super Admin',
       email: 'orr@glass.com', // initial login email
       password: 'orra_1234', // initial password (change it later)

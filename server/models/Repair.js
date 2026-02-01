@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
+const tenantPlugin = require('../utils/tenantPlugin');
 
 const RepairSchema = new mongoose.Schema({
+  tenantId: { type: String, required: true, index: true },
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   manualOrderNumber: { type: String, required: false },
 
@@ -63,6 +65,8 @@ const RepairSchema = new mongoose.Schema({
     isPaid: { type: Boolean, default: false }
   }
 }, { timestamps: true });
+
+RepairSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('Repair', RepairSchema);
 

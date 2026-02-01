@@ -1,11 +1,16 @@
 const Order = require('../models/Order');
 
+// Multi-tenant: pass tenantId so plugin filters queries
+const tenantOpts = (req) => (req.tenantId ? { tenantId: req.tenantId } : {});
+
 // --- CRM & ORDER MANAGEMENT ---
 
 // 1. Get all orders (sorted by newest) - exclude soft-deleted orders
 exports.getOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }] }).sort({ createdAt: -1 });
+    const orders = await Order.find({ $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }] })
+      .setOptions(tenantOpts(req))
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -19,7 +24,7 @@ exports.searchOrders = async (req, res) => {
     if (!q || !q.trim()) {
       return res.json([]);
     }
-    
+
     const query = String(q).trim();
     const searchFilter = {
       $or: [
@@ -29,8 +34,8 @@ exports.searchOrders = async (req, res) => {
         { region: { $regex: query, $options: 'i' } }
       ]
     };
-    
-    const orders = await Order.find(searchFilter).sort({ createdAt: -1 }).limit(50);
+
+    const orders = await Order.find(searchFilter).setOptions(tenantOpts(req)).sort({ createdAt: -1 }).limit(50);
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -40,7 +45,7 @@ exports.searchOrders = async (req, res) => {
 // 2. Get Single Order by ID
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (order) {
       res.json(order);
     } else {
@@ -63,8 +68,8 @@ exports.createOrder = async (req, res) => {
     // Keep legacy `orderNumber` in sync (some DBs have a unique index on it)
     const orderNumber = manualOrderNumber;
 
-    // Check for duplicate manual order number
-    const exists = await Order.findOne({ manualOrderNumber });
+    // Check for duplicate manual order number (per tenant)
+    const exists = await Order.findOne({ manualOrderNumber }).setOptions(tenantOpts(req));
     if (exists) {
       return res.status(400).json({ message: 'Order Number already exists' });
     }
@@ -95,6 +100,7 @@ exports.createOrder = async (req, res) => {
     const initialStatus = materials.length > 0 ? 'materials_pending' : 'production';
 
     const order = new Order({
+      tenantId: req.tenantId,
       orderNumber,
       manualOrderNumber,
       clientName, clientPhone, clientEmail, clientAddress, region,
@@ -124,7 +130,7 @@ exports.updateProduction = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if (productionChecklist && typeof productionChecklist === 'object') {
@@ -158,7 +164,7 @@ exports.updateProducts = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if (Array.isArray(products)) {
@@ -185,12 +191,12 @@ exports.updateMaterials = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if (Array.isArray(materials)) {
       order.materials = materials;
-      
+
       // Recalculate production status based on new materials
       const prodStatus = {
         glass: materials.some(m => m.materialType === 'Glass') ? 'pending' : 'not_needed',
@@ -221,7 +227,7 @@ exports.updateInstallTakeList = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     const list = Array.isArray(installTakeList) ? installTakeList : [];
@@ -252,7 +258,7 @@ exports.updateOrderIssue = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     const nextIsIssue = Boolean(isIssue);
@@ -295,7 +301,7 @@ exports.updateOrderIssue = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   const { status } = req.body;
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (order) {
       order.status = status;
       // If cancelling, mark as deleted instead of just changing status
@@ -326,7 +332,7 @@ exports.addOrderFile = async (req, res) => {
   const { url, type, name } = req.body;
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     order.files.push({
@@ -353,6 +359,7 @@ exports.searchClients = async (req, res) => {
 
   try {
     const clients = await Order.aggregate([
+      ...(req.tenantId ? [{ $match: { tenantId: req.tenantId } }] : []),
       { $match: { clientName: { $regex: query, $options: 'i' } } },
       { $sort: { createdAt: -1 } },
       {
@@ -376,7 +383,7 @@ exports.searchClients = async (req, res) => {
 exports.getClientByPhone = async (req, res) => {
   const { phone } = req.params;
   try {
-    const existingOrder = await Order.findOne({ clientPhone: phone }).sort({ createdAt: -1 });
+    const existingOrder = await Order.findOne({ clientPhone: phone }).setOptions(tenantOpts(req)).sort({ createdAt: -1 });
 
     if (existingOrder) {
       res.json({
@@ -396,7 +403,9 @@ exports.getClientByPhone = async (req, res) => {
 // 8. Get All Customers List (Grouped)
 exports.getCustomers = async (req, res) => {
   try {
+    console.log(`🟡 [getCustomers] Called with tenantId: ${req.tenantId || 'none'}`);
     const customers = await Order.aggregate([
+      ...(req.tenantId ? [{ $match: { tenantId: req.tenantId } }] : []),
       {
         $group: {
           _id: "$clientName",
@@ -408,8 +417,10 @@ exports.getCustomers = async (req, res) => {
       },
       { $sort: { lastOrderDate: -1 } }
     ]);
+    console.log(`✅ [getCustomers] Returning ${customers.length} customers`);
     res.json(customers);
   } catch (error) {
+    console.log(`🔴 [getCustomers] Error: ${error.message}`);
     res.status(500).json({ message: error.message });
   }
 };
@@ -418,7 +429,7 @@ exports.getCustomers = async (req, res) => {
 exports.getClientHistory = async (req, res) => {
   const clientName = decodeURIComponent(req.params.name);
   try {
-    const orders = await Order.find({ clientName: clientName }).sort({ createdAt: -1 });
+    const orders = await Order.find({ clientName: clientName }).setOptions(tenantOpts(req)).sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -432,6 +443,7 @@ exports.getClientHistory = async (req, res) => {
 exports.getPendingMaterials = async (req, res) => {
   try {
     const materials = await Order.aggregate([
+      ...(req.tenantId ? [{ $match: { tenantId: req.tenantId } }] : []),
       { $match: { status: { $nin: ['completed', 'cancelled'] } } },
       { $unwind: "$materials" },
       { $match: { "materials.isOrdered": false } },
@@ -494,16 +506,15 @@ exports.markMaterialOrdered = async (req, res) => {
       }
     }
 
-    await Order.updateOne(
-      { _id: orderId, "materials._id": materialId },
-      {
-        $set: {
-          "materials.$.isOrdered": true,
-          "materials.$.orderedAt": effectiveOrderedAt,
-          "materials.$.orderedBy": effectiveOrderedBy
-        }
+    const updateFilter = { _id: orderId, "materials._id": materialId };
+    if (req.tenantId) updateFilter.tenantId = req.tenantId;
+    await Order.updateOne(updateFilter, {
+      $set: {
+        "materials.$.isOrdered": true,
+        "materials.$.orderedAt": effectiveOrderedAt,
+        "materials.$.orderedBy": effectiveOrderedBy
       }
-    );
+    });
     res.json({ message: 'Material marked as ordered' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -514,6 +525,7 @@ exports.markMaterialOrdered = async (req, res) => {
 exports.getPurchasingStatus = async (req, res) => {
   try {
     const pipeline = [
+      ...(req.tenantId ? [{ $match: { tenantId: req.tenantId } }] : []),
       { $match: { status: { $nin: ['completed'] } } },
       { $unwind: "$materials" },
       { $match: { "materials.isOrdered": true } }, // Show only ordered items
@@ -570,18 +582,17 @@ exports.toggleMaterialArrival = async (req, res) => {
 
   try {
     // 1. Update specific material status
-    await Order.updateOne(
-      { _id: orderId, "materials._id": materialId },
-      {
-        $set: {
-          "materials.$.isArrived": isArrived,
-          "materials.$.arrivedAt": isArrived ? new Date() : null
-        }
+    const updateFilter = { _id: orderId, "materials._id": materialId };
+    if (req.tenantId) updateFilter.tenantId = req.tenantId;
+    await Order.updateOne(updateFilter, {
+      $set: {
+        "materials.$.isArrived": isArrived,
+        "materials.$.arrivedAt": isArrived ? new Date() : null
       }
-    );
+    });
 
     // 2. Recalculate Production Status (Traffic Light)
-    const order = await Order.findById(orderId);
+    const order = await Order.findOne({ _id: orderId }).setOptions(tenantOpts(req));
 
     const updateCategoryStatus = (category) => {
       const relevantMaterials = order.materials.filter(m => m.materialType === category);
@@ -628,7 +639,7 @@ exports.markAsOrdered = async (req, res) => {
 exports.updateFinalInvoice = async (req, res) => {
   const { isIssued, invoiceNumber, isPaid, amount } = req.body;
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     const parsedAmount = amount === '' || amount === null || typeof amount === 'undefined'
@@ -671,7 +682,7 @@ exports.updateFinalInvoice = async (req, res) => {
 exports.addOrderNote = async (req, res) => {
   const { stage, text } = req.body;
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     const noteText = typeof text === 'string' ? text.trim() : '';
@@ -704,7 +715,7 @@ exports.updateClientDetails = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if (typeof clientName === 'string') order.clientName = clientName;
@@ -732,13 +743,13 @@ exports.updateOrderGeneral = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if (typeof manualOrderNumber === 'string' && manualOrderNumber.trim()) {
       // Check for duplicate if changing
       if (manualOrderNumber !== order.manualOrderNumber) {
-        const exists = await Order.findOne({ manualOrderNumber });
+        const exists = await Order.findOne({ manualOrderNumber }).setOptions(tenantOpts(req));
         if (exists) {
           return res.status(400).json({ message: 'Order Number already exists' });
         }
@@ -785,6 +796,7 @@ exports.updateOrderGeneral = async (req, res) => {
 exports.getDeletedOrders = async (req, res) => {
   try {
     const deletedOrders = await Order.find({ deletedAt: { $ne: null } })
+      .setOptions(tenantOpts(req))
       .sort({ deletedAt: -1 });
     res.json(deletedOrders);
   } catch (error) {
@@ -796,9 +808,9 @@ exports.getDeletedOrders = async (req, res) => {
 exports.restoreOrder = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
-    
+
     if (!order.deletedAt) {
       return res.status(400).json({ message: 'Order is not deleted' });
     }
@@ -809,7 +821,7 @@ exports.restoreOrder = async (req, res) => {
     if (order.status === 'cancelled') {
       order.status = 'new';
     }
-    
+
     order.timeline.push({
       status: order.status,
       note: 'Order restored from deleted',
@@ -829,14 +841,14 @@ exports.cleanupDeletedOrders = async (req, res) => {
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const result = await Order.deleteMany({
-      deletedAt: { $ne: null, $lt: sevenDaysAgo }
-    });
-    
-    res.json({ 
+
+    const filter = { deletedAt: { $ne: null, $lt: sevenDaysAgo } };
+    if (req.tenantId) filter.tenantId = req.tenantId;
+    const result = await Order.deleteMany(filter);
+
+    res.json({
       message: `Deleted ${result.deletedCount} orders permanently`,
-      deletedCount: result.deletedCount 
+      deletedCount: result.deletedCount
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

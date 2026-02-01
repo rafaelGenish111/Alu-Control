@@ -36,7 +36,13 @@ export default defineConfig({
     })
   ],
   server: {
-    host: '0.0.0.0', // allow access from any device on the local network
-    port: 5173,
+    host: '0.0.0.0',
+    port: 5174,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+    },
   },
 })

@@ -16,7 +16,7 @@ const AdminPanel = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [editForm, setEditForm] = useState({});
     const [showEditPassword, setShowEditPassword] = useState(false);
-    
+
     // Delete state
     const [deletingUser, setDeletingUser] = useState(null);
 
@@ -82,7 +82,7 @@ const AdminPanel = () => {
         if (!deletingUser) return;
         try {
             await axios.delete(`${API_URL}/auth/users/${deletingUser._id}`, config);
-            alert('User deleted successfully!');
+            alert(t('user_deleted_success') || 'User deleted successfully!');
             setDeletingUser(null);
             fetchUsers();
         } catch (e) {
@@ -191,7 +191,7 @@ const AdminPanel = () => {
                                     <th className="p-4">{t('name')}</th>
                                     <th className="p-4">{t('email')} / {t('phone')}</th>
                                     <th className="p-4">{t('user_role')}</th>
-                                    <th className="p-4 w-20">Actions</th>
+                                    <th className="p-4 w-20">{t('actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800 text-slate-300">
@@ -214,9 +214,9 @@ const AdminPanel = () => {
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2 justify-end">
-                                            <button onClick={() => openEditModal(u)} className="bg-slate-800 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition border border-slate-700">
-                                                <Edit2 size={16} />
-                                            </button>
+                                                <button onClick={() => openEditModal(u)} className="bg-slate-800 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition border border-slate-700">
+                                                    <Edit2 size={16} />
+                                                </button>
                                                 <button onClick={() => setDeletingUser(u)} className="bg-slate-800 p-2 rounded-lg hover:bg-red-600 hover:text-white transition border border-slate-700">
                                                     <Trash2 size={16} />
                                                 </button>
@@ -312,7 +312,7 @@ const AdminPanel = () => {
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-700 shadow-2xl p-6">
                         <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
-                            <h3 className="text-xl font-bold text-white">Delete User</h3>
+                            <h3 className="text-xl font-bold text-white">{t('delete_user')}</h3>
                             <button onClick={() => setDeletingUser(null)} className="text-slate-400 hover:text-white">
                                 <X size={24} />
                             </button>
@@ -320,10 +320,10 @@ const AdminPanel = () => {
 
                         <div className="mb-6">
                             <p className="text-slate-300 mb-4">
-                                Are you sure you want to delete the user <span className="font-bold text-white">{deletingUser.name}</span>?
+                                {t('delete_user_confirm')} <span className="font-bold text-white">{deletingUser.name}</span>?
                             </p>
                             <p className="text-sm text-slate-400">
-                                This action cannot be undone.
+                                {t('delete_user_warning')}
                             </p>
                         </div>
 
@@ -332,13 +332,13 @@ const AdminPanel = () => {
                                 onClick={() => setDeletingUser(null)}
                                 className="px-6 py-2 text-slate-400 hover:text-white"
                             >
-                                Cancel
+                                {t('cancel')}
                             </button>
                             <button
                                 onClick={handleDelete}
                                 className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold"
                             >
-                                Delete
+                                {t('delete')}
                             </button>
                         </div>
                     </div>

@@ -7,8 +7,9 @@ import { API_URL } from '../config/api';
 import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 
 const Production = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const isRTL = i18n.language === 'he';
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [draftNotes, setDraftNotes] = useState({});
@@ -112,7 +113,7 @@ const Production = () => {
                 </div>
             ) : (
                 <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
-                    <table className="w-full text-left text-sm text-slate-300">
+                    <table className={`w-full text-sm text-slate-300 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
                         <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
                             <tr>
                                 <th className="p-4">{t('order_col')}</th>
@@ -142,8 +143,8 @@ const Production = () => {
                                 const currentNote = draftNotes[order._id] ?? (order.productionNote || '');
 
                                 return (
-                                    <tr 
-                                        key={order._id} 
+                                    <tr
+                                        key={order._id}
                                         onClick={(e) => {
                                             // Don't navigate if clicking on a button or input
                                             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {

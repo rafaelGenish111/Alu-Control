@@ -31,20 +31,20 @@ const NoteModal = ({ orderId, stage = 'general', onClose, onSaved }) => {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl">
-        <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+      <div className="dark:bg-slate-900 bg-white w-full max-w-lg rounded-2xl border dark:border-slate-700 border-gray-200 shadow-2xl">
+        <div className="p-5 border-b dark:border-slate-800 border-gray-200 flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-bold text-white">{t('add_note')}</h3>
-            <p className="text-xs text-slate-400 mt-1">{t('stage')}: {stage}</p>
+            <h3 className="text-lg font-bold dark:text-white text-gray-900">{t('add_note')}</h3>
+            <p className="text-xs dark:text-slate-400 text-gray-600 mt-1">{t('stage')}: {stage}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-white">
+          <button type="button" onClick={onClose} className="dark:text-slate-400 text-gray-600 hover:dark:text-white hover:text-gray-900">
             <X />
           </button>
         </div>
 
         <div className="p-5">
           <textarea
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white text-sm"
+            className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg p-3 dark:text-white text-gray-900 text-sm"
             rows={5}
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -52,8 +52,8 @@ const NoteModal = ({ orderId, stage = 'general', onClose, onSaved }) => {
           />
         </div>
 
-        <div className="p-5 border-t border-slate-800 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white">
+        <div className="p-5 border-t dark:border-slate-800 border-gray-200 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="px-4 py-2 dark:text-slate-400 text-gray-600 hover:dark:text-white hover:text-gray-900">
             {t('cancel')}
           </button>
           <button

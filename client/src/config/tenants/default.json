@@ -1,0 +1,12 @@
+{
+  "id": "default",
+  "name": "Glass Dynamics",
+  "branding": {
+    "primaryColor": "#2563eb",
+    "logoUrl": "/logo.png"
+  },
+  "labels": {
+    "order": "Order",
+    "installer": "Installer"
+  }
+}

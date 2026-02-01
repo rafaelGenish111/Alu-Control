@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
+const tenantPlugin = require('../utils/tenantPlugin');
 
 const OrderSchema = new mongoose.Schema({
+  // --- Multi-Tenant ---
+  tenantId: { type: String, required: true, index: true },
+
   // --- General Information ---
   // Legacy field (older deployments used `orderNumber` and a unique DB index may still exist)
   // We keep it in sync with `manualOrderNumber` to avoid E11000 on { orderNumber: null }.
   orderNumber: { type: String, unique: true, sparse: true },
 
-  manualOrderNumber: { type: String, required: true, unique: true }, // Identifier from external system
+  manualOrderNumber: { type: String, required: true }, // Identifier from external system (unique per tenant via compound index)
   clientName: { type: String, required: true },
   clientPhone: String,
   clientEmail: String,
@@ -148,5 +152,10 @@ const OrderSchema = new mongoose.Schema({
   // --- Deletion Tracking ---
   deletedAt: { type: Date } // Set when order is cancelled/deleted, auto-deleted after 7 days
 }, { timestamps: true });
+
+// Compound unique: manualOrderNumber per tenant
+OrderSchema.index({ tenantId: 1, manualOrderNumber: 1 }, { unique: true });
+
+OrderSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('Order', OrderSchema);

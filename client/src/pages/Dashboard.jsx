@@ -2,11 +2,10 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/dist/locale/es';
-import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Calendar as CalendarIcon, Package, Users, Factory, CheckCircle, Clock } from 'lucide-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { API_URL } from '../config/api';
+import api, { API_URL } from '../config/api';
 
 moment.updateLocale('en', {
     week: { dow: 1 }
@@ -35,9 +34,6 @@ const Dashboard = () => {
             return null;
         }
     }, []);
-
-    const token = user?.token;
-    const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
     const currentLang = (i18n.language || 'en').startsWith('es') ? 'es' : 'en';
 
     useEffect(() => {
@@ -49,13 +45,13 @@ const Dashboard = () => {
     const isRestricted = ['installer', 'production'].includes(user?.role);
 
     const fetchData = useCallback(async () => {
-        if (!token) return;
+        if (!user?.token) return;
         setLoading(true);
         try {
             const [ordersRes, repairsRes, customersRes] = await Promise.all([
-                axios.get(`${API_URL}/orders`, config),
-                axios.get(`${API_URL}/repairs`, config),
-                axios.get(`${API_URL}/orders/customers/list`, config).catch(() => ({ data: [] }))
+                api.get('/orders'),
+                api.get('/repairs'),
+                api.get('/orders/customers/list').catch(() => ({ data: [] }))
             ]);
 
             let relevantOrders = ordersRes.data.filter(o => !o.deletedAt);
@@ -78,15 +74,15 @@ const Dashboard = () => {
             }
 
             // Calculate stats
-            const openOrders = relevantOrders.filter(o => 
+            const openOrders = relevantOrders.filter(o =>
                 !['completed', 'cancelled'].includes(o.status)
             ).length;
-            
-            const productionOrders = relevantOrders.filter(o => 
+
+            const productionOrders = relevantOrders.filter(o =>
                 ['materials_pending', 'production_pending', 'in_production', 'production'].includes(o.status)
             ).length;
-            
-            const pendingApproval = relevantOrders.filter(o => 
+
+            const pendingApproval = relevantOrders.filter(o =>
                 o.status === 'pending_approval'
             ).length + relevantRepairs.filter(r => r.status === 'pending_approval').length;
 
@@ -137,7 +133,7 @@ const Dashboard = () => {
             console.error(e);
             setLoading(false);
         }
-    }, [config, isRestricted, user?._id, token]);
+    }, [isRestricted, user?._id, user?.token]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -160,46 +156,46 @@ const Dashboard = () => {
         <div className="flex flex-col gap-6">
             {/* Welcome Header */}
             <div className="mb-2">
-                <h1 className="text-3xl font-bold text-white">
+                <h1 className="text-3xl font-bold dark:text-white text-gray-900">
                     {t('hello') || 'Hello'} {user?.name || 'User'}!
                 </h1>
-                <p className="text-slate-400 mt-1">{t('dashboard_welcome') || 'Welcome to your dashboard'}</p>
+                <p className="dark:text-slate-400 text-gray-600 mt-1">{t('dashboard_welcome') || 'Welcome to your dashboard'}</p>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+                <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm mb-1">{t('sidebar_active_orders')}</p>
-                            <p className="text-3xl font-bold text-white">{stats.openOrders}</p>
+                            <p className="dark:text-slate-400 text-gray-600 text-sm mb-1">{t('sidebar_active_orders')}</p>
+                            <p className="text-3xl font-bold dark:text-white text-gray-900">{stats.openOrders}</p>
                         </div>
                         <Package className="text-blue-500" size={32} />
                     </div>
                 </div>
-                <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+                <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm mb-1">{t('sidebar_customers')}</p>
-                            <p className="text-3xl font-bold text-white">{stats.customers}</p>
+                            <p className="dark:text-slate-400 text-gray-600 text-sm mb-1">{t('sidebar_customers')}</p>
+                            <p className="text-3xl font-bold dark:text-white text-gray-900">{stats.customers}</p>
                         </div>
                         <Users className="text-emerald-500" size={32} />
                     </div>
                 </div>
-                <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+                <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm mb-1">{t('sidebar_production')}</p>
-                            <p className="text-3xl font-bold text-white">{stats.productionOrders}</p>
+                            <p className="dark:text-slate-400 text-gray-600 text-sm mb-1">{t('sidebar_production')}</p>
+                            <p className="text-3xl font-bold dark:text-white text-gray-900">{stats.productionOrders}</p>
                         </div>
                         <Factory className="text-amber-500" size={32} />
                     </div>
                 </div>
-                <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+                <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm mb-1">{t('sidebar_financial')}</p>
-                            <p className="text-3xl font-bold text-white">{stats.pendingApproval}</p>
+                            <p className="dark:text-slate-400 text-gray-600 text-sm mb-1">{t('sidebar_financial')}</p>
+                            <p className="text-3xl font-bold dark:text-white text-gray-900">{stats.pendingApproval}</p>
                         </div>
                         <CheckCircle className="text-purple-500" size={32} />
                     </div>
@@ -208,13 +204,13 @@ const Dashboard = () => {
 
             {/* Calendar */}
             <div className="h-[calc(100vh-300px)] flex flex-col">
-                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                <h2 className="text-2xl font-bold dark:text-white text-gray-900 mb-4 flex items-center gap-3">
                     <CalendarIcon className="text-blue-500" /> {t('calendar')}
                 </h2>
-                <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex-1 text-white">
+                <div className="dark:bg-slate-900 bg-white p-6 rounded-2xl border dark:border-slate-800 border-gray-200 shadow-xl flex-1 dark:text-white text-gray-900">
                     {loading ? (
                         <div className="flex items-center justify-center h-full">
-                            <p className="text-slate-400">{t('loading')}</p>
+                            <p className="dark:text-slate-400 text-gray-600">{t('loading')}</p>
                         </div>
                     ) : (
                         <Calendar

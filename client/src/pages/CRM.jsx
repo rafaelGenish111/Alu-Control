@@ -89,7 +89,7 @@ const CRM = () => {
           </thead>
           <tbody className="text-slate-300 divide-y divide-slate-800">
             {loading ? (
-              <tr><td colSpan="6" className="p-8 text-center">Loading...</td></tr>
+              <tr><td colSpan="6" className="p-8 text-center">{t('loading')}</td></tr>
             ) : orders.map((order) => (
               <tr key={order._id} className="hover:bg-slate-800/50 transition cursor-pointer" onClick={() => navigate(`/orders/${order._id}`)}>
                 <td className="p-4 font-mono text-blue-400">#{order.orderNumber}</td>
@@ -128,7 +128,7 @@ const CRM = () => {
             ))}
 
             {!loading && orders.length === 0 && (
-              <tr><td colSpan="6" className="p-8 text-center text-slate-500">No orders found. Create one!</td></tr>
+              <tr><td colSpan="6" className="p-8 text-center text-slate-500">{t('no_orders_found')}</td></tr>
             )}
           </tbody>
         </table>

@@ -10,7 +10,8 @@ import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 import RepairSchedulingModal from '../components/RepairSchedulingModal';
 
 const InstallationsManager = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'he';
   const [orders, setOrders] = useState([]);
   const [repairs, setRepairs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,7 @@ const InstallationsManager = () => {
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     let result = rows;
-    
+
     // Filter by query if provided
     if (q) {
       result = rows.filter((o) => {
@@ -80,7 +81,7 @@ const InstallationsManager = () => {
         return num.includes(q) || name.includes(q);
       });
     }
-    
+
     // Sort by date: earliest first (null/undefined dates go to the end)
     return result.sort((a, b) => {
       const dateA = a.installDateStart ? new Date(a.installDateStart).getTime() : Infinity;
@@ -96,15 +97,15 @@ const InstallationsManager = () => {
     const start = order.installDateStart ? new Date(order.installDateStart) : null;
     const deadline = end && !Number.isNaN(end.getTime()) ? end : start;
     if (!deadline || Number.isNaN(deadline.getTime())) return false;
-    
+
     // Get start of today (midnight)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Get start of deadline day (midnight)
     const deadlineDay = new Date(deadline);
     deadlineDay.setHours(0, 0, 0, 0);
-    
+
     // Only overdue if deadline day is before today (not same day)
     return deadlineDay.getTime() < today.getTime();
   }, []);
@@ -203,170 +204,170 @@ const InstallationsManager = () => {
       {/* Table */}
       <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl flex-1 flex flex-col">
         <div className="overflow-y-auto flex-1">
-          <table className="w-full text-left text-sm text-slate-300">
-          <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
-            <tr>
-              <th className="p-4">{t('order_col')}</th>
-              <th className="p-4">{t('client')}</th>
-              <th className="p-4">{t('work_days')}</th>
-              <th className="p-4">{t('new_deposit_date')}</th>
-              <th className="p-4">{t('sched_date')}</th>
-              <th className="p-4">{t('region')}</th>
-              <th className="p-4">{t('sched_action')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
-            {loading ? (
-              <tr><td colSpan="7" className="p-8 text-center text-slate-400">Loading...</td></tr>
-            ) : filteredRows.length === 0 ? (
-              <tr><td colSpan="7" className="p-8 text-center text-slate-500">No orders in this stage.</td></tr>
-            ) : (
-              filteredRows.map((order) => {
-                const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
-                const depositPaidAt = order.depositPaidAt ? new Date(order.depositPaidAt).toLocaleDateString() : '—';
-                const scheduledAt = order.installDateStart ? new Date(order.installDateStart).toLocaleDateString() : '—';
-                const masterPlan = order.__type === 'order' ? (order.files && order.files.find((f) => f.type === 'master_plan')) : null;
-                const hasIssue = Boolean(order.issue?.isIssue);
-                const overdue = isOverdue(order);
-                const rowDanger = hasIssue || overdue;
-                const isRepair = order.__type === 'repair';
+          <table className={`w-full text-sm text-slate-300 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+            <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs">
+              <tr>
+                <th className="p-4">{t('order_col')}</th>
+                <th className="p-4">{t('client')}</th>
+                <th className="p-4">{t('work_days')}</th>
+                <th className="p-4">{t('new_deposit_date')}</th>
+                <th className="p-4">{t('sched_date')}</th>
+                <th className="p-4">{t('region')}</th>
+                <th className="p-4">{t('sched_action')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {loading ? (
+                <tr><td colSpan="7" className={`p-8 ${isRTL ? 'text-right' : 'text-center'} text-slate-400`}>{t('loading')}</td></tr>
+              ) : filteredRows.length === 0 ? (
+                <tr><td colSpan="7" className={`p-8 ${isRTL ? 'text-right' : 'text-center'} text-slate-500`}>{t('no_orders_in_stage')}</td></tr>
+              ) : (
+                filteredRows.map((order) => {
+                  const displayOrderNumber = order.manualOrderNumber || order.orderNumber || order._id;
+                  const depositPaidAt = order.depositPaidAt ? new Date(order.depositPaidAt).toLocaleDateString() : '—';
+                  const scheduledAt = order.installDateStart ? new Date(order.installDateStart).toLocaleDateString() : '—';
+                  const masterPlan = order.__type === 'order' ? (order.files && order.files.find((f) => f.type === 'master_plan')) : null;
+                  const hasIssue = Boolean(order.issue?.isIssue);
+                  const overdue = isOverdue(order);
+                  const rowDanger = hasIssue || overdue;
+                  const isRepair = order.__type === 'repair';
 
-                return (
-                  <tr
-                    key={order._id}
-                    onClick={(e) => {
-                      // Only navigate for orders, not repairs
-                      if (isRepair) return;
-                      // Don't navigate if clicking on a button
-                      if (e.target.tagName === 'BUTTON') {
-                        return;
-                      }
-                      navigate(`/orders/${order._id}`);
-                    }}
-                    className={`transition ${rowDanger ? 'bg-red-950/30 hover:bg-red-950/40' : 'hover:bg-slate-800/30'} ${!isRepair ? 'cursor-pointer' : ''}`}
-                  >
-                    <td className="p-4 font-mono text-blue-400">
-                      <div className="flex items-center gap-2">
-                        #{displayOrderNumber}
-                        {isRepair && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-800/40 bg-amber-900/20 text-amber-200">
-                            REPAIR
-                          </span>
-                        )}
-                        {(hasIssue || overdue) && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-900/40 bg-red-900/20 text-red-200">
-                            <AlertTriangle size={12} />
-                            {hasIssue ? 'ISSUE' : t('overdue').toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      {hasIssue && order.issue?.reason && (
-                        <div className="text-xs text-red-200/80 mt-1">{t('sched_issue_reason')}: {order.issue.reason}</div>
-                      )}
-                      {(order.schedulingNotes || (order.notes && order.notes.length > 0)) && (
-                        <div className="text-xs text-slate-400 mt-1">
-                          {order.schedulingNotes || (order.notes && order.notes.length > 0 && order.notes[order.notes.length - 1]?.text)}
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-4 font-semibold text-white">{order.clientName}</td>
-                    <td className="p-4">{isRepair ? (order.estimatedWorkDays ?? 1) : (order.estimatedInstallationDays ?? 1)}</td>
-                    <td className="p-4">{depositPaidAt}</td>
-                    <td className="p-4">{activeBucket === 'scheduled' ? scheduledAt : '—'}</td>
-                    <td className="p-4">{order.region || '—'}</td>
-                    <td className="p-4">
-                      {activeBucket === 'ready_for_install' && (
-                        <div className="flex flex-wrap gap-2">
-                          {masterPlan && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewUrl(masterPlan.url)}
-                              className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
-                            >
-                              <FileText size={14} /> Plan
-                            </button>
+                  return (
+                    <tr
+                      key={order._id}
+                      onClick={(e) => {
+                        // Only navigate for orders, not repairs
+                        if (isRepair) return;
+                        // Don't navigate if clicking on a button
+                        if (e.target.tagName === 'BUTTON') {
+                          return;
+                        }
+                        navigate(`/orders/${order._id}`);
+                      }}
+                      className={`transition ${rowDanger ? 'bg-red-950/30 hover:bg-red-950/40' : 'hover:bg-slate-800/30'} ${!isRepair ? 'cursor-pointer' : ''}`}
+                    >
+                      <td className="p-4 font-mono text-blue-400">
+                        <div className="flex items-center gap-2">
+                          #{displayOrderNumber}
+                          {isRepair && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-800/40 bg-amber-900/20 text-amber-200">
+                              REPAIR
+                            </span>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (isRepair) setSelectedRepair(order);
-                              else setSelectedOrder(order);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
-                          >
-                            {isRepair ? 'Schedule repair' : t('schedule_job')}
-                          </button>
-                          {!isRepair && (
+                          {(hasIssue || overdue) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-900/40 bg-red-900/20 text-red-200">
+                              <AlertTriangle size={12} />
+                              {hasIssue ? 'ISSUE' : t('overdue').toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        {hasIssue && order.issue?.reason && (
+                          <div className="text-xs text-red-200/80 mt-1">{t('sched_issue_reason')}: {order.issue.reason}</div>
+                        )}
+                        {(order.schedulingNotes || (order.notes && order.notes.length > 0)) && (
+                          <div className="text-xs text-slate-400 mt-1">
+                            {order.schedulingNotes || (order.notes && order.notes.length > 0 && order.notes[order.notes.length - 1]?.text)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 font-semibold text-white">{order.clientName}</td>
+                      <td className="p-4">{isRepair ? (order.estimatedWorkDays ?? 1) : (order.estimatedInstallationDays ?? 1)}</td>
+                      <td className="p-4">{depositPaidAt}</td>
+                      <td className="p-4">{activeBucket === 'scheduled' ? scheduledAt : '—'}</td>
+                      <td className="p-4">{order.region || '—'}</td>
+                      <td className="p-4">
+                        {activeBucket === 'ready_for_install' && (
+                          <div className="flex flex-wrap gap-2">
+                            {masterPlan && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewUrl(masterPlan.url)}
+                                className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                              >
+                                <FileText size={14} /> {t('plan')}
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => setNoteOrderId(order._id)}
+                              onClick={() => {
+                                if (isRepair) setSelectedRepair(order);
+                                else setSelectedOrder(order);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                            >
+                              {isRepair ? t('schedule_repair') : t('schedule_job')}
+                            </button>
+                            {!isRepair && (
+                              <button
+                                type="button"
+                                onClick={() => setNoteOrderId(order._id)}
+                                className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
+                              >
+                                {t('add_note')}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {activeBucket === 'pending_approval' && (
+                          <div className="flex flex-wrap gap-2">
+                            {masterPlan && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewUrl(masterPlan.url)}
+                                className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                              >
+                                <FileText size={14} /> {t('plan')}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => navigate('/approvals')}
                               className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
                             >
-                              Add note
+                              {t('sched_review')}
                             </button>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
 
-                      {activeBucket === 'pending_approval' && (
-                        <div className="flex flex-wrap gap-2">
-                          {masterPlan && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewUrl(masterPlan.url)}
-                              className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
-                            >
-                              <FileText size={14} /> Plan
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => navigate('/approvals')}
-                            className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
-                          >
-                            {t('sched_review')}
-                          </button>
-                        </div>
-                      )}
-
-                      {activeBucket === 'scheduled' && (
-                        <div className="flex flex-wrap gap-2 items-center">
-                          {masterPlan && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewUrl(masterPlan.url)}
-                              className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
-                            >
-                              <FileText size={14} /> Plan
-                            </button>
-                          )}
-                          {hasIssue ? (
-                            <button
-                              type="button"
-                              onClick={() => resolveIssue(order)}
-                              className="bg-red-900/30 hover:bg-red-900/40 text-red-100 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-900/40"
-                            >
-                              {t('sched_resolve_issue')}
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => markIssue(order)}
-                              className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
-                            >
-                              {t('sched_mark_issue')}
-                            </button>
-                          )}
-                          <span className="text-slate-500 text-xs">{t('scheduled')}</span>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                        {activeBucket === 'scheduled' && (
+                          <div className="flex flex-wrap gap-2 items-center">
+                            {masterPlan && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewUrl(masterPlan.url)}
+                                className="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                              >
+                                <FileText size={14} /> {t('plan')}
+                              </button>
+                            )}
+                            {hasIssue ? (
+                              <button
+                                type="button"
+                                onClick={() => resolveIssue(order)}
+                                className="bg-red-900/30 hover:bg-red-900/40 text-red-100 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-900/40"
+                              >
+                                {t('sched_resolve_issue')}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => markIssue(order)}
+                                className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700"
+                              >
+                                {t('sched_mark_issue')}
+                              </button>
+                            )}
+                            <span className="text-slate-500 text-xs">{t('scheduled')}</span>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -398,7 +399,7 @@ const InstallationsManager = () => {
       {previewUrl && (
         <MasterPlanPreviewModal
           url={previewUrl}
-          title="Master plan"
+          title={t('master_plan')}
           onClose={() => setPreviewUrl('')}
         />
       )}

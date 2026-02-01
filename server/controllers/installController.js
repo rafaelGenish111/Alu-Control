@@ -1,12 +1,14 @@
 const Order = require('../models/Order');
 const User = require('../models/User');
 
+const tenantOpts = (req) => (req.tenantId ? { tenantId: req.tenantId } : {});
+
 // 1. Assign Team & Schedule (שיבוץ עובדים ותאריכים)
 exports.scheduleInstallation = async (req, res) => {
   const { orderId, installerIds, startDate, endDate, notes } = req.body;
 
   try {
-    const order = await Order.findById(orderId);
+    const order = await Order.findOne({ _id: orderId }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     // Update fields
@@ -22,7 +24,7 @@ exports.scheduleInstallation = async (req, res) => {
     const installerCount = installerIds ? installerIds.length : 0;
     order.timeline.push({
       status: order.status,
-      note: installerCount > 0 
+      note: installerCount > 0
         ? `Scheduled for ${new Date(startDate).toLocaleDateString()} with ${installerCount} installers.`
         : `Scheduled for ${new Date(startDate).toLocaleDateString()} (no installers assigned yet).`
     });
@@ -41,7 +43,7 @@ exports.scheduleInstallation = async (req, res) => {
 // 2. Get Installers List (שליפת רק עובדים שהם מתקינים לטובת ה-Dropdown)
 exports.getInstallersList = async (req, res) => {
   try {
-    const installers = await User.find({ role: 'installer' }).select('name _id email');
+    const installers = await User.find({ role: 'installer' }).setOptions(tenantOpts(req)).select('name _id email');
     res.json(installers);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -52,10 +54,10 @@ exports.getInstallersList = async (req, res) => {
 exports.approveInstallation = async (req, res) => {
   const { orderId } = req.body;
   try {
-    // Installation is already finished by installer app -> pending_approval.
-    // Keep this endpoint for backwards compatibility with older UIs.
-    const order = await Order.findByIdAndUpdate(
-      orderId,
+    const filter = { _id: orderId };
+    if (req.tenantId) filter.tenantId = req.tenantId;
+    const order = await Order.findOneAndUpdate(
+      filter,
       { status: 'pending_approval' },
       { new: true }
     );
@@ -71,7 +73,7 @@ exports.updateInstallers = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if (Array.isArray(installerIds)) {

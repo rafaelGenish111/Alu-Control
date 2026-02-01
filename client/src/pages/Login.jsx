@@ -53,44 +53,44 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="bg-slate-900 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-800">
+    <div className="min-h-screen dark:bg-slate-950 bg-white flex items-center justify-center p-4">
+      <div className="dark:bg-slate-900 bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border dark:border-slate-800 border-gray-200">
 
-        <h1 className="text-3xl font-bold text-white mb-2 text-center bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">Glass Dynamic</h1>
-        <p className="text-slate-400 text-center mb-8">{t('welcome')}</p>
+        <h1 className="text-3xl font-bold dark:text-white text-gray-900 mb-2 text-center bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">Glass Dynamic</h1>
+        <p className="dark:text-slate-400 text-gray-600 text-center mb-8">{t('welcome')}</p>
 
         {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-center text-sm">{error}</div>}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-slate-400 text-sm mb-1">{t('email')}</label>
+            <label className="block dark:text-slate-400 text-gray-600 text-sm mb-1">{t('email')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition"
+              className="w-full dark:bg-slate-950 bg-gray-50 border dark:border-slate-700 border-gray-300 rounded-xl p-3 dark:text-white text-gray-900 focus:border-blue-500 outline-none transition"
               placeholder="user@glass.com"
             />
           </div>
           <div className="relative">
-            <label className="block text-slate-400 text-sm mb-1">{t('password')}</label>
+            <label className="block dark:text-slate-400 text-gray-600 text-sm mb-1">{t('password')}</label>
             <input
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition pr-10"
+              className="w-full dark:bg-slate-950 bg-gray-50 border dark:border-slate-700 border-gray-300 rounded-xl p-3 dark:text-white text-gray-900 focus:border-blue-500 outline-none transition pr-10"
               placeholder="••••••••"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-[32px] text-slate-500 hover:text-white transition"
+              className="absolute right-3 top-[32px] dark:text-slate-500 text-gray-500 hover:dark:text-white hover:text-gray-900 transition"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
 
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-blue-900/20 mt-2">
+          <button type="submit" className="w-full bg-primary hover:opacity-90 text-white font-bold py-3.5 rounded-xl transition shadow-lg mt-2">
             {t('login')}
           </button>
         </form>

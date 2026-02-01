@@ -5,7 +5,7 @@ const app = require('./app');
 const Order = require('./models/Order');
 
 // 1. הגדרת הפורט - קודם כל מהסביבה, ואז ברירת מחדל
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // 2. פונקציית ניקוי עבודות ישנות (מבוצעת פעם ביום)
 const cleanupDeletedOrders = async () => {

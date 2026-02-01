@@ -6,7 +6,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "jest --detectOpenHandles --forceExit",
-    "prepare": "cd .. && husky install .husky"
+    "prepare": "cd .. && husky install .husky",
+    "seed:demo": "node seedDemo.js",
+    "migrate:tenant": "node scripts/migrateToTenant.js"
   },
   "keywords": [],
   "author": "",

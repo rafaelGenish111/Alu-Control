@@ -6,8 +6,9 @@ import { Users, Search, Phone, MapPin, Calendar, Package } from 'lucide-react';
 import { API_URL } from '../config/api';
 
 const Customers = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const isRTL = i18n.language === 'he';
     const [customers, setCustomers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
@@ -73,21 +74,21 @@ const Customers = () => {
             {/* Customers table */}
             <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                    <table className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
                         <thead className="bg-slate-800/50 text-slate-400 uppercase text-xs font-semibold">
                             <tr>
                                 <th className="p-4">{t('client_name')}</th>
                                 <th className="p-4">{t('phone')}</th>
                                 <th className="p-4">{t('address')}</th>
-                                <th className="p-4 text-center">{t('total_orders')}</th>
+                                <th className={`p-4 ${isRTL ? 'text-right' : 'text-center'}`}>{t('total_orders')}</th>
                                 <th className="p-4">{t('last_activity')}</th>
                             </tr>
                         </thead>
                         <tbody className="text-slate-300 divide-y divide-slate-800">
                             {loading ? (
-                                <tr><td colSpan="5" className="p-8 text-center text-slate-500">Loading customers...</td></tr>
+                                <tr><td colSpan="5" className={`p-8 ${isRTL ? 'text-right' : 'text-center'} text-slate-500`}>{t('loading_customers')}</td></tr>
                             ) : filteredCustomers.length === 0 ? (
-                                <tr><td colSpan="5" className="p-8 text-center text-slate-500">No customers found.</td></tr>
+                                <tr><td colSpan="5" className={`p-8 ${isRTL ? 'text-right' : 'text-center'} text-slate-500`}>{t('no_customers_found')}</td></tr>
                             ) : (
                                 filteredCustomers.map((c, idx) => (
                                     <tr

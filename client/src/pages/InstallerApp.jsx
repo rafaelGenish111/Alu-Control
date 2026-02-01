@@ -2,14 +2,17 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText, ClipboardList, X, Save, Menu, Calendar, User, Trash2, Edit2, Plus } from 'lucide-react';
+import { MapPin, Phone, Camera, CheckCircle, Loader, RefreshCw, FileText, ClipboardList, X, Save, Menu, Calendar, User, Trash2, Edit2, Plus, Settings, Sun, Moon, Monitor, LogOut } from 'lucide-react';
 import { API_URL } from '../config/api';
 import NoteModal from '../components/NoteModal';
 import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 const InstallerApp = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const { darkMode, changeDarkMode } = useDarkMode();
+    const isRTL = i18n.language === 'he';
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploadingId, setUploadingId] = useState(null);
@@ -233,22 +236,27 @@ const InstallerApp = () => {
         } catch (e) {
             console.error(e);
             setSavingTakeList(false);
-            alert('Error saving checklist');
+            alert(t('error_saving_checklist') || 'Error saving checklist');
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('userInfo');
+        navigate('/login');
+    };
+
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
+        <div className={`min-h-screen dark:bg-slate-950 bg-white dark:text-slate-100 text-gray-900 pb-20 ${isRTL ? 'rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
             {/* Header with Logo and Hamburger Menu */}
-            <div className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between mb-4">
+            <div className="sticky top-0 z-40 dark:bg-slate-900 bg-white border-b dark:border-slate-800 border-gray-200 px-4 py-3 flex items-center justify-between mb-4">
                 <img src="/logo.jpg" alt="Dynamica" className="h-14 object-contain" />
                 <div className="flex items-center gap-2">
-                    <button onClick={fetchJobs} className="bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95">
+                    <button onClick={fetchJobs} className="dark:bg-slate-800 bg-gray-100 p-2 rounded-full dark:text-slate-400 text-gray-600 active:scale-95">
                         <RefreshCw size={20} />
                     </button>
-                    <button 
-                        onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                        className="bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95"
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="dark:bg-slate-800 bg-gray-100 p-2 rounded-full dark:text-slate-400 text-gray-600 active:scale-95"
                     >
                         <Menu size={20} />
                     </button>
@@ -257,13 +265,13 @@ const InstallerApp = () => {
 
             {/* Hamburger Menu Dropdown */}
             {isMenuOpen && (
-                <div className="fixed top-16 right-4 z-50 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-2 min-w-[200px]">
+                <div className={`fixed top-16 ${isRTL ? 'left-4' : 'right-4'} z-50 dark:bg-slate-900 bg-white border dark:border-slate-800 border-gray-200 rounded-xl shadow-2xl p-2 min-w-[200px]`}>
                     <button
                         onClick={() => {
                             navigate('/calendar');
                             setIsMenuOpen(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-white transition"
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:dark:bg-slate-800 hover:bg-gray-100 dark:text-white text-gray-900 transition ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
                         <Calendar size={20} />
                         <span>{t('sidebar_calendar')}</span>
@@ -273,48 +281,91 @@ const InstallerApp = () => {
                             setShowProfile(true);
                             setIsMenuOpen(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-white transition"
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:dark:bg-slate-800 hover:bg-gray-100 dark:text-white text-gray-900 transition ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
-                        <User size={20} />
-                        <span>Profile</span>
+                        <Settings size={20} />
+                        <span>{t('settings')}</span>
                     </button>
                 </div>
             )}
 
-            {/* Profile Modal */}
+            {/* Settings Modal */}
             {showProfile && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-700 shadow-2xl p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-white">Profile</h3>
-                            <button onClick={() => setShowProfile(false)} className="text-slate-400 hover:text-white">
+                    <div className="dark:bg-slate-900 bg-white w-full max-w-md rounded-2xl border dark:border-slate-700 border-gray-200 shadow-2xl p-6">
+                        <div className={`flex ${isRTL ? 'flex-row-reverse' : ''} justify-between items-center mb-6`}>
+                            <h3 className="text-xl font-bold dark:text-white text-gray-900">{t('settings')}</h3>
+                            <button onClick={() => setShowProfile(false)} className="dark:text-slate-400 text-gray-600 hover:dark:text-white hover:text-gray-900">
                                 <X size={24} />
                             </button>
                         </div>
-                        <div className="space-y-4">
+
+                        {/* User Info Section */}
+                        <div className="space-y-4 mb-6">
                             <div>
-                                <label className="text-xs text-slate-400 block mb-1">Name</label>
-                                <div className="text-white font-medium">{user?.name || '-'}</div>
+                                <label className="text-xs dark:text-slate-400 text-gray-600 block mb-1">{t('name')}</label>
+                                <div className="dark:text-white text-gray-900 font-medium">{user?.name || '-'}</div>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 block mb-1">Email</label>
-                                <div className="text-white font-medium">{user?.email || '-'}</div>
+                                <label className="text-xs dark:text-slate-400 text-gray-600 block mb-1">{t('email')}</label>
+                                <div className="dark:text-white text-gray-900 font-medium">{user?.email || '-'}</div>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 block mb-1">Phone</label>
-                                <div className="text-white font-medium">{user?.phone || '-'}</div>
+                                <label className="text-xs dark:text-slate-400 text-gray-600 block mb-1">{t('phone')}</label>
+                                <div className="dark:text-white text-gray-900 font-medium">{user?.phone || '-'}</div>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 block mb-1">Role</label>
-                                <div className="text-white font-medium">{user?.role || '-'}</div>
+                                <label className="text-xs dark:text-slate-400 text-gray-600 block mb-1">{t('role')}</label>
+                                <div className="dark:text-white text-gray-900 font-medium">{t(`role_${user?.role}`) || user?.role || '-'}</div>
                             </div>
                         </div>
-                        <div className="mt-6 flex justify-end">
+
+                        {/* Display Mode Section */}
+                        <div className="mb-6">
+                            <h4 className="text-sm font-bold dark:text-white text-gray-900 mb-3 flex items-center gap-2">
+                                <Moon size={16} /> {t('display_mode')}
+                            </h4>
+                            <div className="grid grid-cols-3 gap-2">
+                                <button
+                                    onClick={() => changeDarkMode('light')}
+                                    className={`px-4 py-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${darkMode === 'light'
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold'
+                                        : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 bg-white dark:text-white text-gray-900 hover:border-blue-300 dark:hover:border-blue-600'
+                                        }`}
+                                >
+                                    <Sun size={20} />
+                                    <span className="text-xs">{t('light_mode')}</span>
+                                </button>
+                                <button
+                                    onClick={() => changeDarkMode('dark')}
+                                    className={`px-4 py-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${darkMode === 'dark'
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold'
+                                        : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 bg-white dark:text-white text-gray-900 hover:border-blue-300 dark:hover:border-blue-600'
+                                        }`}
+                                >
+                                    <Moon size={20} />
+                                    <span className="text-xs">{t('dark_mode')}</span>
+                                </button>
+                                <button
+                                    onClick={() => changeDarkMode('auto')}
+                                    className={`px-4 py-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${darkMode === 'auto'
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold'
+                                        : 'border-gray-300 dark:border-slate-700 dark:bg-slate-800 bg-white dark:text-white text-gray-900 hover:border-blue-300 dark:hover:border-blue-600'
+                                        }`}
+                                >
+                                    <Monitor size={20} />
+                                    <span className="text-xs">{t('auto_mode')}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Logout Button */}
+                        <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'} mt-6 pt-6 border-t dark:border-slate-800 border-gray-200`}>
                             <button
-                                onClick={() => setShowProfile(false)}
-                                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold"
+                                onClick={handleLogout}
+                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold inline-flex items-center gap-2"
                             >
-                                Close
+                                <LogOut size={18} /> {t('logout')}
                             </button>
                         </div>
                     </div>
@@ -330,296 +381,296 @@ const InstallerApp = () => {
             )}
 
             <div className="p-4">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-white">{t('my_tasks')}</h2>
+                <div className={`flex ${isRTL ? 'flex-row-reverse' : ''} justify-between items-center mb-6`}>
+                    <h2 className="text-2xl font-bold dark:text-white text-gray-900">{t('my_tasks')}</h2>
                 </div>
 
-            <div className="flex gap-2 mb-6">
-                <button
-                    type="button"
-                    onClick={() => setRange('today')}
-                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${range === 'today' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-900 text-slate-300 border-slate-800'
-                        }`}
-                >
-                    Today
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setRange('tomorrow')}
-                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${range === 'tomorrow' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-900 text-slate-300 border-slate-800'
-                        }`}
-                >
-                    Tomorrow
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setRange('week')}
-                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${range === 'week' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-900 text-slate-300 border-slate-800'
-                        }`}
-                >
-                    Next 7 days
-                </button>
-            </div>
-
-            {loading ? (
-                <div className="flex flex-col items-center justify-center mt-20 text-slate-400">
-                    <Loader className="animate-spin mb-4" size={32} />
-                    <p>Loading...</p>
+                <div className={`flex gap-2 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <button
+                        type="button"
+                        onClick={() => setRange('today')}
+                        className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${range === 'today' ? 'bg-blue-600 text-white border-blue-500' : 'dark:bg-slate-900 bg-gray-100 dark:text-slate-300 text-gray-700 dark:border-slate-800 border-gray-300'
+                            }`}
+                    >
+                        {t('today') || 'Today'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRange('tomorrow')}
+                        className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${range === 'tomorrow' ? 'bg-blue-600 text-white border-blue-500' : 'dark:bg-slate-900 bg-gray-100 dark:text-slate-300 text-gray-700 dark:border-slate-800 border-gray-300'
+                            }`}
+                    >
+                        {t('tomorrow') || 'Tomorrow'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRange('week')}
+                        className={`px-4 py-2 rounded-2xl text-sm font-bold border transition ${range === 'week' ? 'bg-blue-600 text-white border-blue-500' : 'dark:bg-slate-900 bg-gray-100 dark:text-slate-300 text-gray-700 dark:border-slate-800 border-gray-300'
+                            }`}
+                    >
+                        {t('next_7_days') || 'Next 7 days'}
+                    </button>
                 </div>
-            ) : jobs.length === 0 ? (
-                <div className="text-center text-slate-500 mt-20 bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
-                    <CheckCircle className="mx-auto mb-4 text-slate-600" size={48} />
-                    <p className="text-lg font-medium">{t('no_installs')}</p>
-                </div>
-            ) : (
-                <div className="space-y-6">
-                    {jobs.map(job => {
-                        // Check for Master Plan
-                        const masterPlan = job.files && job.files.find(f => f.type === 'master_plan');
-                        const overdue = isOverdue(job);
 
-                        return (
-                            <div key={job._id} className={`bg-slate-900 rounded-3xl p-6 shadow-xl border relative overflow-hidden ${overdue ? 'border-red-600 bg-red-950/20' : 'border-slate-800'}`}>
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center mt-20 dark:text-slate-400 text-gray-600">
+                        <Loader className="animate-spin mb-4" size={32} />
+                        <p>{t('loading')}</p>
+                    </div>
+                ) : jobs.length === 0 ? (
+                    <div className={`text-center dark:text-slate-500 text-gray-600 mt-20 dark:bg-slate-900/50 bg-gray-50 p-8 rounded-3xl border dark:border-slate-800 border-gray-200`}>
+                        <CheckCircle className="mx-auto mb-4 dark:text-slate-600 text-gray-400" size={48} />
+                        <p className="text-lg font-medium">{t('no_installs')}</p>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {jobs.map(job => {
+                            // Check for Master Plan
+                            const masterPlan = job.files && job.files.find(f => f.type === 'master_plan');
+                            const overdue = isOverdue(job);
 
-                                {/* --- MASTER PLAN BANNER (THE NEW PART) --- */}
-                                {masterPlan && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviewUrl(masterPlan.url)}
-                                        className="w-full block bg-indigo-600 hover:bg-indigo-500 text-white p-5 rounded-2xl mb-6 text-center font-bold shadow-lg shadow-indigo-900/40 border border-indigo-400 flex items-center justify-center gap-3 active:scale-95 transition"
-                                    >
-                                        <FileText size={24} />
-                                        <span className="text-xl">{t('view_master_plan')}</span>
-                                    </button>
-                                )}
+                            return (
+                                <div key={job._id} className={`dark:bg-slate-900 bg-white rounded-3xl p-6 shadow-xl border relative overflow-hidden ${overdue ? 'border-red-600 dark:bg-red-950/20 bg-red-50' : 'dark:border-slate-800 border-gray-200'}`}>
 
-                                <div className={`absolute top-0 right-0 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl ${overdue ? 'bg-red-600' : 'bg-blue-600'}`}>
-                                    {overdue ? 'OVERDUE' : range.toUpperCase()}
-                                </div>
+                                    {/* --- MASTER PLAN BANNER (THE NEW PART) --- */}
+                                    {masterPlan && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewUrl(masterPlan.url)}
+                                            className={`w-full block bg-indigo-600 hover:bg-indigo-500 text-white p-5 rounded-2xl mb-6 text-center font-bold shadow-lg shadow-indigo-900/40 border border-indigo-400 flex items-center justify-center gap-3 active:scale-95 transition ${isRTL ? 'flex-row-reverse' : ''}`}
+                                        >
+                                            <FileText size={24} />
+                                            <span className="text-xl">{t('view_master_plan')}</span>
+                                        </button>
+                                    )}
 
-                                <h3 className="text-xl font-bold text-white mb-1 pr-12">{job.clientName}</h3>
-                                {job.__type === 'repair' && (
-                                    <div className="text-xs font-bold text-amber-300 mb-2">REPAIR</div>
-                                )}
+                                    <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-0 text-white text-xs font-bold px-4 py-1.5 ${isRTL ? 'rounded-br-2xl' : 'rounded-bl-2xl'} ${overdue ? 'bg-red-600' : 'bg-blue-600'}`}>
+                                        {overdue ? (t('overdue') || 'OVERDUE') : (range === 'today' ? (t('today') || 'TODAY') : range === 'tomorrow' ? (t('tomorrow') || 'TOMORROW') : (t('next_7_days') || 'NEXT 7 DAYS'))}
+                                    </div>
 
-                                <a
-                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.clientAddress || '')}`}
-                                    target="_blank" rel="noreferrer"
-                                    className="text-blue-400 text-sm mb-6 flex items-center gap-2 underline underline-offset-4"
-                                >
-                                    <MapPin size={16} /> {job.clientAddress}
-                                </a>
+                                    <h3 className={`text-xl font-bold dark:text-white text-gray-900 mb-1 ${isRTL ? 'pl-12' : 'pr-12'}`}>{job.clientName}</h3>
+                                    {job.__type === 'repair' && (
+                                        <div className="text-xs font-bold text-amber-600 dark:text-amber-300 mb-2">{t('repairs')}</div>
+                                    )}
 
-                                <div className="grid grid-cols-2 gap-3 mb-6">
                                     <a
                                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.clientAddress || '')}`}
                                         target="_blank" rel="noreferrer"
-                                        className="bg-slate-800 hover:bg-slate-700 text-blue-400 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition active:scale-95 border border-slate-700"
+                                        className={`text-blue-600 dark:text-blue-400 text-sm mb-6 flex items-center gap-2 underline underline-offset-4 ${isRTL ? 'flex-row-reverse' : ''}`}
                                     >
-                                        <MapPin /> Google Maps
+                                        <MapPin size={16} /> {job.clientAddress}
                                     </a>
-                                    <a
-                                        href={`tel:${job.clientPhone}`}
-                                        className="bg-slate-800 hover:bg-slate-700 text-emerald-400 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition active:scale-95 border border-slate-700"
-                                    >
-                                        <Phone /> Call
-                                    </a>
-                                </div>
 
-                                {/* Installation checklist (collapsed -> modal) */}
-                                <button
-                                    type="button"
-                                    onClick={() => openTakeList(job)}
-                                    className="w-full mb-4 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-2xl font-bold text-sm border border-slate-700 inline-flex items-center justify-center gap-2"
-                                >
-                                    <ClipboardList size={18} /> {t('what_to_take') || 'Installation checklist'} {Array.isArray(job.installTakeList) && job.installTakeList.length > 0 && `(${job.installTakeList.length})`}
-                                </button>
-
-                                {/* Existing Photos Gallery */}
-                                {job.files && job.files.filter(f => f.type !== 'master_plan').length > 0 && (
-                                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                                        {job.files.filter(f => f.type !== 'master_plan').map((file, idx) => (
-                                            <a key={idx} href={file.url} target="_blank" rel="noreferrer" className="block w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-slate-600 shadow-sm">
-                                                <img src={file.url} alt="proof" className="w-full h-full object-cover" />
-                                            </a>
-                                        ))}
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        <a
+                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.clientAddress || '')}`}
+                                            target="_blank" rel="noreferrer"
+                                            className="dark:bg-slate-800 bg-gray-100 hover:dark:bg-slate-700 hover:bg-gray-200 text-blue-600 dark:text-blue-400 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition active:scale-95 border dark:border-slate-700 border-gray-300"
+                                        >
+                                            <MapPin /> {t('google_maps') || 'Google Maps'}
+                                        </a>
+                                        <a
+                                            href={`tel:${job.clientPhone}`}
+                                            className="dark:bg-slate-800 bg-gray-100 hover:dark:bg-slate-700 hover:bg-gray-200 text-emerald-600 dark:text-emerald-400 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition active:scale-95 border dark:border-slate-700 border-gray-300"
+                                        >
+                                            <Phone /> {t('call') || 'Call'}
+                                        </a>
                                     </div>
-                                )}
 
-                                {/* Upload & Finish */}
-                                <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
-                                    <label className="block w-full bg-slate-800 border-2 border-dashed border-slate-600 active:border-blue-500 text-slate-400 py-4 rounded-xl text-center cursor-pointer transition mb-3">
-                                        {uploadingId === job._id ? (
-                                            <span className="flex items-center justify-center gap-2 text-blue-400"><Loader className="animate-spin" /> {t('uploading')}</span>
-                                        ) : (
-                                            <span className="flex items-center justify-center gap-2"><Camera /> {t('upload_proof')}</span>
-                                        )}
-                                        <input type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={(e) => handleFileUpload(e, job)} />
-                                    </label>
-
-                                    <button
-                                        onClick={() => finishJob(job)}
-                                        className="w-full bg-emerald-600 active:bg-emerald-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 active:scale-95 transition"
-                                    >
-                                        <CheckCircle /> {t('finish_job')}
-                                    </button>
-
+                                    {/* Installation checklist (collapsed -> modal) */}
                                     <button
                                         type="button"
-                                        onClick={() => setNoteOrderId(job._id)}
-                                        className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-bold text-sm border border-slate-700"
+                                        onClick={() => openTakeList(job)}
+                                        className={`w-full mb-4 dark:bg-slate-800 bg-gray-100 hover:dark:bg-slate-700 hover:bg-gray-200 dark:text-white text-gray-900 py-3 rounded-2xl font-bold text-sm border dark:border-slate-700 border-gray-300 inline-flex items-center justify-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
                                     >
-                                        Add note
+                                        <ClipboardList size={18} /> {t('what_to_take') || 'Installation checklist'} {Array.isArray(job.installTakeList) && job.installTakeList.length > 0 && `(${job.installTakeList.length})`}
                                     </button>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
 
-            {noteOrderId && (
-                <NoteModal
-                    orderId={noteOrderId}
-                    stage="installation"
-                    onClose={() => setNoteOrderId(null)}
-                    onSaved={fetchJobs}
-                />
-            )}
+                                    {/* Existing Photos Gallery */}
+                                    {job.files && job.files.filter(f => f.type !== 'master_plan').length > 0 && (
+                                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                                            {job.files.filter(f => f.type !== 'master_plan').map((file, idx) => (
+                                                <a key={idx} href={file.url} target="_blank" rel="noreferrer" className="block w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-slate-600 shadow-sm">
+                                                    <img src={file.url} alt="proof" className="w-full h-full object-cover" />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
 
-            {previewUrl && (
-                <MasterPlanPreviewModal
-                    url={previewUrl}
-                    title="Master plan"
-                    onClose={() => setPreviewUrl('')}
-                />
-            )}
+                                    {/* Upload & Finish */}
+                                    <div className="dark:bg-black/20 bg-gray-50 rounded-2xl p-4 border dark:border-white/5 border-gray-200">
+                                        <label className={`block w-full dark:bg-slate-800 bg-gray-100 border-2 border-dashed dark:border-slate-600 border-gray-300 active:border-blue-500 dark:text-slate-400 text-gray-700 py-4 rounded-xl text-center cursor-pointer transition mb-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                            {uploadingId === job._id ? (
+                                                <span className={`flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 ${isRTL ? 'flex-row-reverse' : ''}`}><Loader className="animate-spin" /> {t('uploading')}</span>
+                                            ) : (
+                                                <span className={`flex items-center justify-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}><Camera /> {t('upload_proof')}</span>
+                                            )}
+                                            <input type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={(e) => handleFileUpload(e, job)} />
+                                        </label>
 
-            {takeListJob && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
-                        <div className="p-5 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
-                            <div>
-                                <h3 className="text-lg font-bold text-white">{t('install_checklist_title')}</h3>
-                                <p className="text-xs text-slate-400 mt-1">{takeListJob.clientName}</p>
-                            </div>
-                            <button type="button" onClick={closeTakeList} className="text-slate-400 hover:text-white">
-                                <X />
-                            </button>
-                        </div>
+                                        <button
+                                            onClick={() => finishJob(job)}
+                                            className={`w-full bg-emerald-600 active:bg-emerald-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 active:scale-95 transition ${isRTL ? 'flex-row-reverse' : ''}`}
+                                        >
+                                            <CheckCircle /> {t('finish_job')}
+                                        </button>
 
-                        <div className="p-5 space-y-2 overflow-y-auto flex-1 min-h-0">
-                            {takeListDraft.length === 0 ? (
-                                <div className="text-slate-500 text-sm">{t('no_checklist_items')}</div>
-                            ) : (
-                                takeListDraft.map((it, idx) => (
-                                    <div key={`${it.label}-${idx}`} className="flex items-center gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200">
-                                        <input
-                                            type="checkbox"
-                                            className="accent-emerald-500"
-                                            checked={Boolean(it.done)}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
-                                            }}
-                                        />
-                                        {editingTakeItemIndex === idx ? (
-                                            <div className="flex-1 flex items-center gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={editingTakeItemText}
-                                                    onChange={(e) => setEditingTakeItemText(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            saveEditingTakeItem();
-                                                        } else if (e.key === 'Escape') {
-                                                            cancelEditingTakeItem();
-                                                        }
-                                                    }}
-                                                    className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
-                                                    autoFocus
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={saveEditingTakeItem}
-                                                    className="text-emerald-400 hover:text-emerald-300"
-                                                    title={t('save')}
-                                                >
-                                                    <Save size={16} />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={cancelEditingTakeItem}
-                                                    className="text-slate-400 hover:text-slate-300"
-                                                    title={t('cancel')}
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <span className={`flex-1 ${it.done ? 'line-through text-slate-500' : ''}`}>{it.label}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => startEditingTakeItem(idx, it.label)}
-                                                    className="text-blue-400 hover:text-blue-300"
-                                                    title={t('edit')}
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeTakeListItem(idx)}
-                                                    className="text-red-400 hover:text-red-300"
-                                                    title={t('remove')}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setNoteOrderId(job._id)}
+                                            className={`w-full mt-3 dark:bg-slate-800 bg-gray-100 hover:dark:bg-slate-700 hover:bg-gray-200 dark:text-white text-gray-900 py-3 rounded-xl font-bold text-sm border dark:border-slate-700 border-gray-300 ${isRTL ? 'flex-row-reverse' : ''}`}
+                                        >
+                                            {t('add_note')}
+                                        </button>
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
-                        <div className="p-5 border-t border-slate-800 flex-shrink-0 space-y-2">
-                            <input
-                                type="text"
-                                value={newTakeListItem}
-                                onChange={(e) => setNewTakeListItem(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        addTakeListItem();
-                                    }
-                                }}
-                                placeholder={t('add_new_item')}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder:text-slate-500 text-sm"
-                            />
-                            <button
-                                type="button"
-                                onClick={addTakeListItem}
-                                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold inline-flex items-center justify-center gap-2 text-sm"
-                            >
-                                <Plus size={16} /> {t('add')}
-                            </button>
-                        </div>
+                {noteOrderId && (
+                    <NoteModal
+                        orderId={noteOrderId}
+                        stage="installation"
+                        onClose={() => setNoteOrderId(null)}
+                        onSaved={fetchJobs}
+                    />
+                )}
 
-                        <div className="p-5 border-t border-slate-800 flex justify-end gap-3 flex-shrink-0">
-                            <button type="button" onClick={closeTakeList} className="px-4 py-2 text-slate-400 hover:text-white">
-                                {t('close')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={saveTakeList}
-                                disabled={savingTakeList}
-                                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl font-bold inline-flex items-center gap-2"
-                            >
-                                <Save size={18} /> {savingTakeList ? t('saving') : t('save')}
-                            </button>
+                {previewUrl && (
+                    <MasterPlanPreviewModal
+                        url={previewUrl}
+                        title={t('master_plan')}
+                        onClose={() => setPreviewUrl('')}
+                    />
+                )}
+
+                {takeListJob && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                        <div className="dark:bg-slate-900 bg-white w-full max-w-lg rounded-2xl border dark:border-slate-700 border-gray-200 shadow-2xl flex flex-col max-h-[90vh]">
+                            <div className={`p-5 border-b dark:border-slate-800 border-gray-200 flex ${isRTL ? 'flex-row-reverse' : ''} justify-between items-center flex-shrink-0`}>
+                                <div>
+                                    <h3 className="text-lg font-bold dark:text-white text-gray-900">{t('install_checklist_title')}</h3>
+                                    <p className="text-xs dark:text-slate-400 text-gray-600 mt-1">{takeListJob.clientName}</p>
+                                </div>
+                                <button type="button" onClick={closeTakeList} className="dark:text-slate-400 text-gray-600 hover:dark:text-white hover:text-gray-900">
+                                    <X />
+                                </button>
+                            </div>
+
+                            <div className="p-5 space-y-2 overflow-y-auto flex-1 min-h-0">
+                                {takeListDraft.length === 0 ? (
+                                    <div className="dark:text-slate-500 text-gray-600 text-sm">{t('no_checklist_items')}</div>
+                                ) : (
+                                    takeListDraft.map((it, idx) => (
+                                        <div key={`${it.label}-${idx}`} className={`flex items-center gap-3 dark:bg-slate-950/40 bg-gray-50 border dark:border-slate-800 border-gray-200 rounded-xl px-3 py-2 text-sm dark:text-slate-200 text-gray-900 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="accent-emerald-500"
+                                                checked={Boolean(it.done)}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
+                                                }}
+                                            />
+                                            {editingTakeItemIndex === idx ? (
+                                                <div className={`flex-1 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                                    <input
+                                                        type="text"
+                                                        value={editingTakeItemText}
+                                                        onChange={(e) => setEditingTakeItemText(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                saveEditingTakeItem();
+                                                            } else if (e.key === 'Escape') {
+                                                                cancelEditingTakeItem();
+                                                            }
+                                                        }}
+                                                        className="flex-1 dark:bg-slate-800 bg-white border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-1.5 dark:text-white text-gray-900 text-sm"
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={saveEditingTakeItem}
+                                                        className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
+                                                        title={t('save')}
+                                                    >
+                                                        <Save size={16} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={cancelEditingTakeItem}
+                                                        className="dark:text-slate-400 text-gray-600 hover:dark:text-slate-300 hover:text-gray-900"
+                                                        title={t('cancel')}
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span className={`flex-1 ${it.done ? 'line-through dark:text-slate-500 text-gray-500' : ''}`}>{it.label}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => startEditingTakeItem(idx, it.label)}
+                                                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                                                        title={t('edit')}
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeTakeListItem(idx)}
+                                                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                                        title={t('remove')}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="p-5 border-t dark:border-slate-800 border-gray-200 flex-shrink-0 space-y-2">
+                                <input
+                                    type="text"
+                                    value={newTakeListItem}
+                                    onChange={(e) => setNewTakeListItem(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            addTakeListItem();
+                                        }
+                                    }}
+                                    placeholder={t('add_new_item')}
+                                    className="w-full dark:bg-slate-800 bg-white border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 placeholder:dark:text-slate-500 placeholder:text-gray-500 text-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={addTakeListItem}
+                                    className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold inline-flex items-center justify-center gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
+                                >
+                                    <Plus size={16} /> {t('add')}
+                                </button>
+                            </div>
+
+                            <div className={`p-5 border-t dark:border-slate-800 border-gray-200 flex ${isRTL ? 'justify-start' : 'justify-end'} gap-3 flex-shrink-0`}>
+                                <button type="button" onClick={closeTakeList} className="px-4 py-2 dark:text-slate-400 text-gray-600 hover:dark:text-white hover:text-gray-900">
+                                    {t('close')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={saveTakeList}
+                                    disabled={savingTakeList}
+                                    className={`px-6 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl font-bold inline-flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                                >
+                                    <Save size={18} /> {savingTakeList ? t('saving') : t('save')}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
             </div>
         </div>
     );

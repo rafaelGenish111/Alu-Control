@@ -1,6 +1,8 @@
 const Repair = require('../models/Repair');
 const Order = require('../models/Order');
 
+const tenantOpts = (req) => (req.tenantId ? { tenantId: req.tenantId } : {});
+
 exports.createRepair = async (req, res) => {
   const { manualOrderNumber, contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, clientName, clientPhone, clientAddress, region, hora } = req.body;
   const userName = req.user ? req.user.name : 'System';
@@ -19,9 +21,10 @@ exports.createRepair = async (req, res) => {
     }
 
     const orderNumberStr = manualOrderNumber ? String(manualOrderNumber).trim() : null;
-    const order = orderNumberStr ? await Order.findOne({ manualOrderNumber: orderNumberStr }) : null;
-    
+    const order = orderNumberStr ? await Order.findOne({ manualOrderNumber: orderNumberStr }).setOptions(tenantOpts(req)) : null;
+
     const repair = new Repair({
+      tenantId: req.tenantId,
       orderId: order ? order._id : null,
       manualOrderNumber: orderNumberStr || null,
       clientName: String(clientName).trim(),
@@ -59,7 +62,7 @@ exports.getRepairs = async (req, res) => {
       ];
     }
 
-    const repairs = await Repair.find(filter).sort({ createdAt: -1 });
+    const repairs = await Repair.find(filter).setOptions(tenantOpts(req)).sort({ createdAt: -1 });
     res.json(repairs);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -68,7 +71,7 @@ exports.getRepairs = async (req, res) => {
 
 exports.getRepairById = async (req, res) => {
   try {
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
     res.json(repair);
   } catch (error) {
@@ -79,7 +82,7 @@ exports.getRepairById = async (req, res) => {
 exports.updateRepair = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
   try {
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     const { contactedAt, problem, estimatedWorkDays, warrantyStatus, paymentNote, manualOrderNumber, clientPhone, clientAddress, hora, installers, finalInvoice, status } = req.body;
@@ -119,7 +122,7 @@ exports.updateRepair = async (req, res) => {
       const orderNumberStr = manualOrderNumber ? String(manualOrderNumber).trim() : null;
       repair.manualOrderNumber = orderNumberStr || null;
       // Try to find matching order
-      const order = orderNumberStr ? await Order.findOne({ manualOrderNumber: orderNumberStr }) : null;
+      const order = orderNumberStr ? await Order.findOne({ manualOrderNumber: orderNumberStr }).setOptions(tenantOpts(req)) : null;
       repair.orderId = order ? order._id : null;
     }
 
@@ -137,7 +140,7 @@ exports.addRepairNote = async (req, res) => {
 
   try {
     if (!text || !String(text).trim()) return res.status(400).json({ message: 'Text is required' });
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     repair.notes.push({ text: String(text).trim(), createdAt: new Date(), createdBy: userName });
@@ -154,7 +157,7 @@ exports.addRepairMedia = async (req, res) => {
 
   try {
     if (!url) return res.status(400).json({ message: 'URL is required' });
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     repair.media.push({
@@ -175,7 +178,7 @@ exports.addRepairMedia = async (req, res) => {
 exports.approveRepair = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
   try {
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     repair.status = 'ready_to_schedule';
@@ -192,7 +195,7 @@ exports.scheduleRepair = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     if (!Array.isArray(installerIds) || installerIds.length === 0) {
@@ -222,7 +225,7 @@ exports.scheduleRepair = async (req, res) => {
 exports.closeRepair = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
   try {
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     // If installer closes, move to pending_approval instead of closed
@@ -241,7 +244,7 @@ exports.updateRepairIssue = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     const nextIsIssue = Boolean(isIssue);
@@ -271,7 +274,7 @@ exports.updateRepairTakeList = async (req, res) => {
   const userName = req.user ? req.user.name : 'System';
 
   try {
-    const repair = await Repair.findById(req.params.id);
+    const repair = await Repair.findOne({ _id: req.params.id }).setOptions(tenantOpts(req));
     if (!repair) return res.status(404).json({ message: 'Repair not found' });
 
     if (Array.isArray(installTakeList)) {

@@ -13,7 +13,8 @@ import MasterPlanPreviewModal from '../components/MasterPlanPreviewModal';
 const ClientCard = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'he';
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -282,8 +283,8 @@ const ClientCard = () => {
     }
   };
 
-  if (loading) return <div className="text-white p-8">Loading...</div>;
-  if (!order) return <div className="text-white p-8">Order not found</div>;
+  if (loading) return <div className="dark:text-white text-gray-900 p-8">{t('loading')}</div>;
+  if (!order) return <div className="dark:text-white text-gray-900 p-8">{t('order_not_found') || 'Order not found'}</div>;
 
   const masterPlan = order.files && order.files.find(f => f.type === 'master_plan');
   const otherFiles = order.files ? order.files.filter(f => f.type !== 'master_plan') : [];
@@ -546,14 +547,14 @@ const ClientCard = () => {
         <div className="lg:col-span-2 space-y-6">
 
           {/* Master Plan Card */}
-          <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl border border-indigo-500/50 p-6 shadow-lg relative overflow-hidden">
+          <div className="dark:bg-gradient-to-br dark:from-indigo-900 dark:to-slate-900 bg-gradient-to-br bg-indigo-50 from-indigo-50 to-blue-50 rounded-2xl border dark:border-indigo-500/50 border-indigo-300 p-6 shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><FileCheck size={100} /></div>
             <div className="flex justify-between items-start relative z-10">
               <div>
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <FileCheck className="text-indigo-400" /> {t('master_plan')}
+                <h3 className="text-xl font-bold dark:text-white text-gray-900 flex items-center gap-2">
+                  <FileCheck className="dark:text-indigo-400 text-indigo-600" /> {t('master_plan')}
                 </h3>
-                <p className="text-indigo-200 text-sm mt-1">{t('master_plan_desc')}</p>
+                <p className="dark:text-indigo-200 text-indigo-700 text-sm mt-1">{t('master_plan_desc')}</p>
               </div>
 
               <label className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer shadow-lg transition flex items-center gap-2">
@@ -564,39 +565,39 @@ const ClientCard = () => {
             </div>
 
             {masterPlan ? (
-              <div className="mt-6 bg-slate-950/50 rounded-xl p-4 flex items-center justify-between border border-indigo-500/30">
+              <div className="mt-6 dark:bg-slate-950/50 bg-white/80 rounded-xl p-4 flex items-center justify-between border dark:border-indigo-500/30 border-indigo-200">
                 <div className="flex items-center gap-4">
-                  <div className="bg-indigo-500/20 p-3 rounded-lg text-indigo-300"><FileText size={24} /></div>
+                  <div className="dark:bg-indigo-500/20 bg-indigo-100 p-3 rounded-lg dark:text-indigo-300 text-indigo-700"><FileText size={24} /></div>
                   <div>
-                    <p className="font-bold text-white truncate max-w-[200px]">{masterPlan.name}</p>
-                    <p className="text-slate-400 text-xs">{new Date(masterPlan.uploadedAt).toLocaleDateString()}</p>
+                    <p className="font-bold dark:text-white text-gray-900 truncate max-w-[200px]">{masterPlan.name}</p>
+                    <p className="dark:text-slate-400 text-gray-600 text-xs">{new Date(masterPlan.uploadedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setPreviewUrl(masterPlan.url)}
-                  className="bg-white text-indigo-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition"
+                  className="bg-indigo-600 dark:bg-white dark:text-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 dark:hover:bg-indigo-50 transition"
                 >
                   {t('open_plan')}
                 </button>
               </div>
             ) : (
-              <div className="mt-6 border-2 border-dashed border-indigo-500/30 rounded-xl h-20 flex items-center justify-center text-indigo-300/50 text-sm">
+              <div className="mt-6 border-2 border-dashed dark:border-indigo-500/30 border-indigo-300 rounded-xl h-20 flex items-center justify-center dark:text-indigo-300/50 text-indigo-500/50 text-sm">
                 {t('no_plan')}
               </div>
             )}
           </div>
 
           {/* What to take to installation */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+          <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6 shadow-lg">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="font-bold flex items-center gap-2 text-lg">
+              <h3 className="font-bold flex items-center gap-2 text-lg dark:text-white text-gray-900">
                 <ClipboardList className="text-emerald-400" /> {t('what_to_take') || 'What to take to installation'}
               </h3>
               <button
                 type="button"
                 onClick={saveTakeList}
                 disabled={savingTakeList}
-                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700 inline-flex items-center gap-2"
+                className="dark:bg-slate-800 bg-gray-100 hover:dark:bg-slate-700 hover:bg-gray-200 disabled:opacity-50 dark:text-white text-gray-900 px-4 py-2 rounded-xl text-sm font-bold border dark:border-slate-700 border-gray-300 inline-flex items-center gap-2"
               >
                 <Save size={16} /> {savingTakeList ? t('loading') : t('save')}
               </button>
@@ -604,13 +605,13 @@ const ClientCard = () => {
 
             <div className="space-y-2">
               {takeListDraft.length === 0 ? (
-                <div className="text-slate-500 text-sm py-4 text-center border border-dashed border-slate-700 rounded-xl">
+                <div className="dark:text-slate-500 text-gray-600 text-sm py-4 text-center border border-dashed dark:border-slate-700 border-gray-300 rounded-xl">
                   {t('no_items_yet') || 'No items yet. Add items below.'}
                 </div>
               ) : (
                 takeListDraft.map((it, idx) => (
-                  <div key={`${it.label}-${idx}`} className="flex items-center justify-between gap-3 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2">
-                    <label className="flex items-center gap-3 text-sm text-slate-200 w-full">
+                  <div key={`${it.label}-${idx}`} className="flex items-center justify-between gap-3 dark:bg-slate-950/40 bg-gray-50 border dark:border-slate-800 border-gray-200 rounded-xl px-3 py-2">
+                    <label className="flex items-center gap-3 text-sm dark:text-slate-200 text-gray-900 w-full">
                       <input
                         type="checkbox"
                         className="accent-emerald-500"
@@ -620,13 +621,13 @@ const ClientCard = () => {
                           setTakeListDraft((prev) => prev.map((p, i) => (i === idx ? { ...p, done: checked } : p)));
                         }}
                       />
-                      <span className={it.done ? 'line-through text-slate-500' : ''}>{it.label}</span>
+                      <span className={it.done ? 'line-through dark:text-slate-500 text-gray-500' : ''}>{it.label}</span>
                     </label>
                     <button
                       type="button"
                       onClick={() => setTakeListDraft((prev) => prev.filter((_, i) => i !== idx))}
-                      className="text-slate-500 hover:text-red-400"
-                      title="Remove"
+                      className="dark:text-slate-500 text-gray-600 hover:text-red-400"
+                      title={t('remove')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -641,7 +642,7 @@ const ClientCard = () => {
                 value={newTakeItem}
                 onChange={(e) => setNewTakeItem(e.target.value)}
                 placeholder={t('add_item') || 'Add item...'}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder:text-slate-500"
+                className="flex-1 dark:bg-slate-800 bg-gray-50 border dark:border-slate-700 border-gray-300 rounded-xl px-4 py-2 dark:text-white text-gray-900 dark:placeholder:text-slate-500 placeholder:text-gray-400"
               />
               <button
                 type="button"
@@ -659,9 +660,9 @@ const ClientCard = () => {
           </div>
 
           {/* Products for Client Table */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+          <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6 shadow-lg">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold flex items-center gap-2 text-lg"><Package className="text-blue-400" /> {t('new_products_title')}</h3>
+              <h3 className="font-bold flex items-center gap-2 text-lg dark:text-white text-gray-900"><Package className="text-blue-400" /> {t('new_products_title')}</h3>
               {!editingProducts ? (
                 <button
                   onClick={() => setEditingProducts(true)}
@@ -677,7 +678,7 @@ const ClientCard = () => {
                       const existing = Array.isArray(order.products) ? order.products : [];
                       setProductsDraft(existing);
                     }}
-                    className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                    className="dark:bg-slate-700 bg-gray-200 hover:dark:bg-slate-600 hover:bg-gray-300 dark:text-white text-gray-900 px-4 py-2 rounded-lg text-sm font-bold"
                   >
                     {t('cancel')}
                   </button>
@@ -692,19 +693,19 @@ const ClientCard = () => {
               )}
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-slate-300">
-                <thead className="text-xs uppercase bg-slate-800/50 text-slate-400">
+              <table className={`w-full text-sm dark:text-slate-300 text-gray-700 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                <thead className="text-xs uppercase dark:bg-slate-800/50 bg-gray-100 dark:text-slate-400 text-gray-600">
                   <tr>
                     <th className="p-3">{t('new_col_type')}</th>
                     <th className="p-3">{t('new_col_desc')}</th>
-                    <th className="p-3">Quantity</th>
-                    {editingProducts && <th className="p-3">Actions</th>}
+                    <th className="p-3">{t('qty')}</th>
+                    {editingProducts && <th className="p-3">{t('actions')}</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className="divide-y dark:divide-slate-800/50 divide-gray-200">
                   {productsDraft.length === 0 ? (
                     <tr>
-                      <td colSpan={editingProducts ? 4 : 3} className="p-4 text-center text-slate-500">No products</td>
+                      <td colSpan={editingProducts ? 4 : 3} className={`p-4 ${isRTL ? 'text-right' : 'text-center'} dark:text-slate-500 text-gray-600`}>{t('no_products') || 'No products'}</td>
                     </tr>
                   ) : (
                     productsDraft.map((product, i) => (
@@ -719,10 +720,10 @@ const ClientCard = () => {
                                 updated[i] = { ...updated[i], type: e.target.value };
                                 setProductsDraft(updated);
                               }}
-                              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                              className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 text-sm"
                             />
                           ) : (
-                            <span className="font-medium text-white">{product.type || '-'}</span>
+                            <span className="font-medium dark:text-white text-gray-900">{product.type || '-'}</span>
                           )}
                         </td>
                         <td className="p-3">
@@ -735,10 +736,10 @@ const ClientCard = () => {
                                 updated[i] = { ...updated[i], description: e.target.value };
                                 setProductsDraft(updated);
                               }}
-                              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                              className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 text-sm"
                             />
                           ) : (
-                            <span>{product.description || '-'}</span>
+                            <span className="dark:text-slate-300 text-gray-700">{product.description || '-'}</span>
                           )}
                         </td>
                         <td className="p-3">
@@ -751,11 +752,11 @@ const ClientCard = () => {
                                 updated[i] = { ...updated[i], quantity: parseInt(e.target.value) || 1 };
                                 setProductsDraft(updated);
                               }}
-                              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                              className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 text-sm"
                               min="1"
                             />
                           ) : (
-                            <span>{product.quantity || 1}</span>
+                            <span className="dark:text-slate-300 text-gray-700">{product.quantity || 1}</span>
                           )}
                         </td>
                         {editingProducts && (
@@ -781,7 +782,7 @@ const ClientCard = () => {
                     onClick={() => {
                       setProductsDraft([...productsDraft, { type: '', description: '', quantity: 1 }]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                    className="dark:bg-slate-800 bg-gray-100 hover:dark:bg-slate-700 hover:bg-gray-200 dark:text-white text-gray-900 px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                   >
                     <Plus size={16} /> {t('add_product') || 'Add Product'}
                   </button>
@@ -791,9 +792,9 @@ const ClientCard = () => {
           </div>
 
           {/* Items Table (Materials) */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+          <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6 shadow-lg">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold flex items-center gap-2 text-lg"><Package className="text-blue-400" /> {t('items')}</h3>
+              <h3 className="font-bold flex items-center gap-2 text-lg dark:text-white text-gray-900"><Package className="text-blue-400" /> {t('items')}</h3>
               {!editingMaterials ? (
                 <button
                   onClick={() => setEditingMaterials(true)}
@@ -809,7 +810,7 @@ const ClientCard = () => {
                       const existing = Array.isArray(order.materials) ? order.materials : [];
                       setMaterialsDraft(existing);
                     }}
-                    className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                    className="dark:bg-slate-700 bg-gray-200 hover:dark:bg-slate-600 hover:bg-gray-300 dark:text-white text-gray-900 px-4 py-2 rounded-lg text-sm font-bold"
                   >
                     {t('cancel')}
                   </button>
@@ -824,20 +825,20 @@ const ClientCard = () => {
               )}
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-slate-300">
-                <thead className="text-xs uppercase bg-slate-800/50 text-slate-400">
+              <table className={`w-full text-sm dark:text-slate-300 text-gray-700 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                <thead className="text-xs uppercase dark:bg-slate-800/50 bg-gray-100 dark:text-slate-400 text-gray-600">
                   <tr>
-                    <th className="p-3">{t('product')}</th>
-                    <th className="p-3">{t('description')}</th>
-                    <th className="p-3">{t('supplier')}</th>
-                    <th className="p-3">Quantity</th>
-                    {editingMaterials && <th className="p-3">Actions</th>}
+                    <th className="p-3">{t('product') || t('new_mat_glass')}</th>
+                    <th className="p-3">{t('description') || t('new_col_desc')}</th>
+                    <th className="p-3">{t('supplier') || t('new_select_supplier')}</th>
+                    <th className="p-3">{t('qty')}</th>
+                    {editingMaterials && <th className="p-3">{t('actions')}</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className="divide-y dark:divide-slate-800/50 divide-gray-200">
                   {materialsDraft.length === 0 ? (
                     <tr>
-                      <td colSpan={editingMaterials ? 5 : 4} className="p-4 text-center text-slate-500">No materials</td>
+                      <td colSpan={editingMaterials ? 5 : 4} className={`p-4 ${isRTL ? 'text-right' : 'text-center'} dark:text-slate-500 text-gray-600`}>{t('no_materials') || 'No materials'}</td>
                     </tr>
                   ) : (
                     materialsDraft.map((item, i) => {
@@ -856,7 +857,7 @@ const ClientCard = () => {
                                   updated[i] = { ...updated[i], materialType: e.target.value };
                                   setMaterialsDraft(updated);
                                 }}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                                className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 text-sm"
                               >
                                 <option value="Glass">{t('new_mat_glass')}</option>
                                 <option value="Aluminum">{t('new_mat_aluminum')}</option>
@@ -866,7 +867,7 @@ const ClientCard = () => {
                                 <option value="Other">{t('new_mat_other')}</option>
                               </select>
                             ) : (
-                              <span className="font-medium text-white">{productLabel}</span>
+                              <span className="font-medium dark:text-white text-gray-900">{productLabel}</span>
                             )}
                           </td>
                           <td className="p-3">
@@ -879,10 +880,10 @@ const ClientCard = () => {
                                   updated[i] = { ...updated[i], description: e.target.value };
                                   setMaterialsDraft(updated);
                                 }}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                                className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 text-sm"
                               />
                             ) : (
-                              <span>{item.description || '-'}</span>
+                              <span className="dark:text-slate-300 text-gray-700">{item.description || '-'}</span>
                             )}
                           </td>
                           <td className="p-3">
@@ -894,15 +895,15 @@ const ClientCard = () => {
                                   updated[i] = { ...updated[i], supplier: e.target.value };
                                   setMaterialsDraft(updated);
                                 }}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                                className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 text-sm"
                               >
-                                <option value="">Select supplier</option>
+                                <option value="">{t('new_select_supplier')}</option>
                                 {suppliersList.map(s => (
                                   <option key={s._id} value={s.name}>{s.name}</option>
                                 ))}
                               </select>
                             ) : (
-                              <span className="text-blue-300">{supplierLabel}</span>
+                              <span className="dark:text-blue-300 text-blue-600">{supplierLabel}</span>
                             )}
                           </td>
                           <td className="p-3">
@@ -915,11 +916,11 @@ const ClientCard = () => {
                                   updated[i] = { ...updated[i], quantity: parseInt(e.target.value) || 1 };
                                   setMaterialsDraft(updated);
                                 }}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                                className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg px-3 py-2 dark:text-white text-gray-900 text-sm"
                                 min="1"
                               />
                             ) : (
-                              <span>{item.quantity || 1}</span>
+                              <span className="dark:text-slate-300 text-gray-700">{item.quantity || 1}</span>
                             )}
                           </td>
                           {editingMaterials && (
@@ -946,7 +947,7 @@ const ClientCard = () => {
                     onClick={() => {
                       setMaterialsDraft([...materialsDraft, { materialType: 'Glass', description: '', supplier: '', quantity: 1 }]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
+                    className="dark:bg-slate-800 bg-gray-100 hover:dark:bg-slate-700 hover:bg-gray-200 dark:text-white text-gray-900 px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-2"
                   >
                     <Plus size={16} /> {t('add_material') || 'Add Material'}
                   </button>
@@ -956,23 +957,23 @@ const ClientCard = () => {
           </div>
 
           {/* Order Notes */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg">
+          <div className="dark:bg-slate-900 bg-white rounded-2xl border dark:border-slate-800 border-gray-200 p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold flex items-center gap-2 text-lg"><MessageSquare className="text-cyan-400" /> Order notes</h3>
+              <h3 className="font-bold flex items-center gap-2 text-lg dark:text-white text-gray-900"><MessageSquare className="text-cyan-400" /> {t('notes')}</h3>
             </div>
 
             <div className="space-y-3 mb-5">
               {(order.notes || []).length === 0 ? (
-                <div className="text-slate-500 text-sm">No notes yet.</div>
+                <div className="dark:text-slate-500 text-gray-600 text-sm">{t('no_notes')}</div>
               ) : (
                 (order.notes || []).slice().reverse().map((n, idx) => (
-                  <div key={idx} className="bg-slate-950/30 border border-slate-800 rounded-xl p-4">
-                    <div className="flex justify-between items-center text-xs text-slate-500 mb-2">
+                  <div key={idx} className="dark:bg-slate-950/30 bg-gray-50 border dark:border-slate-800 border-gray-200 rounded-xl p-4">
+                    <div className={`flex ${isRTL ? 'flex-row-reverse' : ''} justify-between items-center text-xs dark:text-slate-500 text-gray-600 mb-2`}>
                       <span className="uppercase">{n.stage || 'general'}</span>
                       <span>{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</span>
                     </div>
-                    <div className="text-slate-200 text-sm whitespace-pre-wrap">{n.text}</div>
-                    <div className="text-xs text-slate-500 mt-2">by {n.createdBy || 'System'}</div>
+                    <div className="dark:text-slate-200 text-gray-900 text-sm whitespace-pre-wrap">{n.text}</div>
+                    <div className="text-xs dark:text-slate-500 text-gray-600 mt-2">{t('by') || 'by'} {n.createdBy || t('system') || 'System'}</div>
                   </div>
                 ))
               )}
@@ -980,41 +981,41 @@ const ClientCard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-1">
-                <label className="text-xs text-slate-400 block mb-1">Stage</label>
+                <label className="text-xs dark:text-slate-400 text-gray-600 block mb-1">{t('stage')}</label>
                 <select
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm"
+                  className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg p-2 dark:text-white text-gray-900 text-sm"
                   value={noteStage}
                   onChange={(e) => setNoteStage(e.target.value)}
                 >
-                  <option value="general">General</option>
-                  <option value="order">Order</option>
-                  <option value="procurement">Procurement</option>
-                  <option value="production">Production</option>
-                  <option value="scheduling">Scheduling</option>
-                  <option value="installation">Installation</option>
-                  <option value="approval">Approval</option>
+                  <option value="general">{t('general') || 'General'}</option>
+                  <option value="order">{t('order_col')}</option>
+                  <option value="procurement">{t('procurement') || 'Procurement'}</option>
+                  <option value="production">{t('production') || 'Production'}</option>
+                  <option value="scheduling">{t('scheduling') || 'Scheduling'}</option>
+                  <option value="installation">{t('installation') || 'Installation'}</option>
+                  <option value="approval">{t('approval') || 'Approval'}</option>
                 </select>
               </div>
               <div className="md:col-span-3">
-                <label className="text-xs text-slate-400 block mb-1">Add note</label>
+                <label className="text-xs dark:text-slate-400 text-gray-600 block mb-1">{t('add_note')}</label>
                 <textarea
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white text-sm"
+                  className="w-full dark:bg-slate-800 bg-gray-50 border dark:border-slate-600 border-gray-300 rounded-lg p-2 dark:text-white text-gray-900 text-sm"
                   rows="3"
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
-                  placeholder="Write a note..."
+                  placeholder={t('write_note_placeholder')}
                 />
               </div>
             </div>
 
-            <div className="flex justify-end mt-4">
+            <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'} mt-4`}>
               <button
                 type="button"
                 onClick={addNote}
                 disabled={!noteText.trim()}
                 className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2 rounded-xl font-bold"
               >
-                Save note
+                {t('save')} {t('note') || t('notes')}
               </button>
             </div>
           </div>
@@ -1135,45 +1136,45 @@ const ClientCard = () => {
           {/* Gallery */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-full">
             <h3 className="font-bold mb-4 flex items-center gap-2 text-lg"><ImageIcon className="text-purple-400" /> {t('files_media')}</h3>
-          <p className="text-xs text-slate-500 mb-4">{t('files_desc')}</p>
+            <p className="text-xs text-slate-500 mb-4">{t('files_desc')}</p>
 
-          <div className="flex-1 space-y-3 mb-6 overflow-y-auto min-h-[200px] max-h-[400px] pr-2 custom-scrollbar">
-            {otherFiles.length > 0 ? (
-              otherFiles.map((file, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-purple-500/30 transition group">
-                  <div className="w-12 h-12 bg-slate-700 rounded-lg overflow-hidden shrink-0 border border-slate-600">
-                    {file.type === 'site_photo' || file.url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                      <img src={file.url} alt="file" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400"><FileText size={20} /></div>
-                    )}
+            <div className="flex-1 space-y-3 mb-6 overflow-y-auto min-h-[200px] max-h-[400px] pr-2 custom-scrollbar">
+              {otherFiles.length > 0 ? (
+                otherFiles.map((file, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-purple-500/30 transition group">
+                    <div className="w-12 h-12 bg-slate-700 rounded-lg overflow-hidden shrink-0 border border-slate-600">
+                      {file.type === 'site_photo' || file.url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                        <img src={file.url} alt="file" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400"><FileText size={20} /></div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{file.name}</p>
+                      <p className="text-slate-500 text-[10px] mt-0.5">{new Date(file.uploadedAt).toLocaleDateString()}</p>
+                      <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 mt-1 border border-slate-600">
+                        {file.type === 'site_photo' ? 'Photo' : 'Doc'}
+                      </span>
+                    </div>
+                    <a href={file.url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition">
+                      <ExternalLink size={18} />
+                    </a>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate">{file.name}</p>
-                    <p className="text-slate-500 text-[10px] mt-0.5">{new Date(file.uploadedAt).toLocaleDateString()}</p>
-                    <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 mt-1 border border-slate-600">
-                      {file.type === 'site_photo' ? 'Photo' : 'Doc'}
-                    </span>
-                  </div>
-                  <a href={file.url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition">
-                    <ExternalLink size={18} />
-                  </a>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-slate-500 py-10 border-2 border-dashed border-slate-800 rounded-xl">{t('no_files_yet')}</div>
-            )}
+                ))
+              ) : (
+                <div className="text-center text-slate-500 py-10 border-2 border-dashed border-slate-800 rounded-xl">{t('no_files_yet')}</div>
+              )}
+            </div>
+
+            <label className={`block w-full border border-dashed ${uploadingType === 'document' ? 'border-purple-500 bg-purple-500/10' : 'border-slate-600 hover:border-purple-500 hover:bg-slate-800'} text-slate-300 p-4 rounded-xl transition text-sm text-center cursor-pointer relative`}>
+              {uploadingType === 'document' ? (
+                <span className="flex items-center justify-center gap-2"><Loader className="animate-spin" size={16} /> {t('uploading')}...</span>
+              ) : (
+                <span className="flex items-center justify-center gap-2 font-medium">+ {t('upload_doc')}</span>
+              )}
+              <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'document')} disabled={!!uploadingType} />
+            </label>
           </div>
-
-          <label className={`block w-full border border-dashed ${uploadingType === 'document' ? 'border-purple-500 bg-purple-500/10' : 'border-slate-600 hover:border-purple-500 hover:bg-slate-800'} text-slate-300 p-4 rounded-xl transition text-sm text-center cursor-pointer relative`}>
-            {uploadingType === 'document' ? (
-              <span className="flex items-center justify-center gap-2"><Loader className="animate-spin" size={16} /> {t('uploading')}...</span>
-            ) : (
-              <span className="flex items-center justify-center gap-2 font-medium">+ {t('upload_doc')}</span>
-            )}
-            <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'document')} disabled={!!uploadingType} />
-          </label>
-        </div>
         </div>
 
       </div>
